@@ -970,33 +970,3 @@ with modifications made for ido"
     (if point
         (goto-char point)
         (message "No non-ascii characters."))))
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ENCODING ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; C-h C RET
-;; M-x describe-current-coding-system
-
-(add-to-list 'file-coding-system-alist '("\\.tex" . utf-8-unix) )
-(add-to-list 'file-coding-system-alist '("\\.txt" . utf-8-unix) )
-(add-to-list 'file-coding-system-alist '("\\.el" . utf-8-unix) )
-(add-to-list 'file-coding-system-alist '("\\.scratch" . utf-8-unix) )
-(add-to-list 'file-coding-system-alist '("user_prefs" . utf-8-unix) )
-
-(add-to-list 'process-coding-system-alist '("\\.txt" . utf-8-unix) )
-
-(add-to-list 'network-coding-system-alist '("\\.txt" . utf-8-unix) )
-
-(prefer-coding-system 'utf-8-unix)
-(set-default-coding-systems 'utf-8-unix)
-(set-terminal-coding-system 'utf-8-unix)
-(set-keyboard-coding-system 'utf-8-unix)
-(set-selection-coding-system 'utf-8-unix)
-(setq-default buffer-file-coding-system 'utf-8-unix)
-
-;; Treat clipboard input as UTF-8 string first; compound text next, etc.
-(setq x-select-request-type '(UTF8_STRING COMPOUND_TEXT TEXT STRING))
-
-;; mnemonic for utf-8 is "U", which is defined in the mule.el
-(setq eol-mnemonic-dos ":CRLF")
-(setq eol-mnemonic-mac ":CR")
-(setq eol-mnemonic-undecided ":?")
-(setq eol-mnemonic-unix ":LF")
-
