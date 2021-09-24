@@ -970,3 +970,4 @@ with modifications made for ido"
     (if point
         (goto-char point)
         (message "No non-ascii characters."))))
+(setq kill-ring-max 1000)
