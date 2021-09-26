@@ -846,6 +846,8 @@
 
 (use-package pass)
 
+;; Shit goes slow with the defaults for some reason
+;; The original code seems to scroll visually I think so not needed
 (define-key org-agenda-mode-map (kbd "n") #'next-line)
 (define-key org-agenda-mode-map (kbd "C-n") #'next-line)
 (define-key org-agenda-mode-map (kbd "p") #'previous-line)
@@ -855,6 +857,7 @@
 
 (save-place-mode)
 
+;; Starts the spotifyd demon and attempts to restart it on crashes
 (defun run-spotifyd ()
   "Runs spotifyd and seemlessly restarts it on crashes"
   (interactive)
