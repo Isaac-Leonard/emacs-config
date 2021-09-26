@@ -638,7 +638,7 @@
 (load-file "~/.emacs.d/smudge-config.el.gpg")
 (setq smudge-transport 'connect)
 (use-package smudge
-  :straight (smudge :type git :host github :repo "danielfm/smudge"))
+  :straight (smudge :type git :host github :repo "Isaac-Leonard/smudge"))
 (define-key smudge-mode-map (kbd "C-c .") 'smudge-command-map)
 (global-smudge-remote-mode)
 
@@ -843,22 +843,6 @@
 (use-package smex
   :bind (("M-x" . smex))
   :config (smex-initialize))
-
-(defun smudge-playlist-load-more ()
-  "Load the next page of results for the current playlist view."
-  (interactive)
-  (let ((next-page (1+ smudge-current-page)))
-    (cond ((bound-and-true-p smudge-query)          (smudge-playlist-search-update smudge-query next-page))
-          ((bound-and-true-p smudge-browse-message) (smudge-playlist-featured-playlists-update next-page))
-          (t                                         (smudge-playlist-user-playlists-update (smudge-api-get-item-id smudge-user) next-page)))))
-
-(defun smudge-playlist-reload ()
-  "Reloads the first page of results for the current playlist view."
-  (interactive)
-  (let ((page 1))
-    (cond ((bound-and-true-p smudge-query)          (smudge-playlist-search-update smudge-query page))
-          ((bound-and-true-p smudge-browse-message) (smudge-playlist-featured-playlists-update page))
-          (t                                         (smudge-playlist-user-playlists-update (smudge-api-get-item-id smudge-user) page)))))
 
 (use-package pass)
 
