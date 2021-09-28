@@ -294,30 +294,6 @@
 (setq synonyms-file "~/mthesaur.txt")
 (use-package org-ref)
 
-(setq org-roam-v2-ack t)
-(use-package org-roam
-  ;;  :straight (org-rome :type git :host github :repo "org-roam/org-roam")
-  :hook
-  (after-init . org-roam-mode)
-  :custom
-  (org-roam-directory "~/org-roam/")
-  (org-roam-capture-templates      '(("d" "default" plain (function org-roam--capture-get-point)
-          "%?"
-          :file-name "%<%Y%m%d%H%M%S>-${slug}"
-          :head "#+title: ${title}\n"
-          :unnarrowed t))
-				   )
-  (org-roam-completion-everywhere t)
-  (org-roam-index-file "index.org")
-  :bind (:map org-roam-mode-map
-              (("C-c n l" . org-roam)
-               ("C-c n f" . org-roam-find-file)
-               ("C-c n g" . org-roam-graph))
-              :map org-mode-map
-              (("C-c n i" . org-roam-insert))
-              (("C-c n I" . org-roam-insert-immediate))
-	      )
-  )
 
      (use-package org-journal
        :bind
