@@ -868,10 +868,13 @@
                   (setq devices (cdr devices))
                   (and device (not (or is-daemon is-active))))))))))
     (message "spotify appears to be down")))
+
+;; Tries to start the music when we open emacs
 (add-hook 'after-init-hook (lambda ()
 			     (run-spotifyd)))
 
 (defun internet-up-p (&optional host)
+  "Checks to see if the internet is working"
   (= 0 (call-process "ping" nil nil nil "-c" "1" "-W" "1" 
                      (if host host "www.google.com"))))
 
@@ -934,3 +937,6 @@ with modifications made for ido"
         (goto-char point)
         (message "No non-ascii characters."))))
 (setq kill-ring-max 1000)
+
+
+(add-hook 'after-init-hook 'org-agenda-list)
