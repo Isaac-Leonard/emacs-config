@@ -295,24 +295,24 @@
 (use-package org-ref)
 
 
-     (use-package org-journal
-       :bind
-       ("C-c n j" . org-journal-new-entry)
-       :custom
-       (org-journal-date-prefix "#+title: ")
-       (org-journal-file-format "%Y-%m-%d.org")
-       (org-journal-dir "/path/to/journal/files/")
-       (org-journal-date-format "%A, %d %B %Y"))
+(use-package org-journal
+  :bind
+  ("C-c n j" . org-journal-new-entry)
+  :custom
+  (org-journal-date-prefix "#+title: ")
+  (org-journal-file-format "%Y-%m-%d.org")
+  (org-journal-dir "/path/to/journal/files/")
+  (org-journal-date-format "%A, %d %B %Y"))
 
-     (use-package deft
-       :after org
-       :bind
-       ("C-c n d" . deft)
-       :custom
-       (deft-recursive t)
-       (deft-use-filter-string-for-filename t)
-       (deft-default-extension "org")
-       (deft-directory "~/org-roam/"))
+(use-package deft
+  :after org
+  :bind
+  ("C-c n d" . deft)
+  :custom
+  (deft-recursive t)
+  (deft-use-filter-string-for-filename t)
+  (deft-default-extension "org")
+  (deft-directory "~/org-roam/"))
 
 ;; My own custom functions
 (defun jump-to-end-of-buffer ()
