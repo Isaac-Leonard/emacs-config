@@ -123,8 +123,7 @@
 
 ;; Error checking, never actually noticed what it does though
 (use-package flycheck
-  :hook (lsp-mode . flycheck-mode)
-  )
+  :hook (lsp-mode . flycheck-mode))
 
 ;;This works somehow
 ;; Sets up emacs for typescript using tide-mode
