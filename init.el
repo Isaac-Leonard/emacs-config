@@ -940,3 +940,5 @@ with modifications made for ido"
 
 
 (add-hook 'after-init-hook 'org-agenda-list)
+
+(flycheck-add-next-checker 'typescript-tide '(warning . javascript-eslint))
