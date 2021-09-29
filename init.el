@@ -133,6 +133,9 @@
   (tide-setup)
   (flycheck-mode +1)
   (setq flycheck-check-syntax-automatically '(save mode-enabled))
+  (flycheck-add-next-checker 'typescript-tide '(warning . javascript-eslint))
+  (bind-key "C-c n" (lambda ()(interactive) (flycheck-next-error) (sleep-for 3) (emacspeak-speak-line '(4))))
+  (bind-key "C-c p" (lambda ()(interactive) (flycheck-previous-error) (sleep-for 3) (emacspeak-speak-line '(4))))
   (eldoc-mode +1)
   (tide-hl-identifier-mode +1)
   ( tsserver-node-modules)
@@ -156,6 +159,7 @@
   (flycheck-add-mode 'typescript-tslint 'web-mode)
   (flycheck-add-mode 'javascript-eslint 'tide-mode)
   )
+
 (add-hook 'typescript-mode-hook #'setup-tide-mode)
 
 ;; Format js and ts code
@@ -940,4 +944,3 @@ with modifications made for ido"
 
 (add-hook 'after-init-hook 'org-agenda-list)
 
-(flycheck-add-next-checker 'typescript-tide '(warning . javascript-eslint))
