@@ -134,12 +134,13 @@
   (flycheck-mode +1)
   (setq flycheck-check-syntax-automatically '(save mode-enabled))
   (flycheck-add-next-checker 'typescript-tide '(warning . javascript-eslint))
-  (bind-key "C-c n" (lambda ()(interactive) (flycheck-next-error) (sleep-for 3) (emacspeak-speak-line '(4))))
-  (bind-key "C-c p" (lambda ()(interactive) (flycheck-previous-error) (sleep-for 3) (emacspeak-speak-line '(4))))
+  ;; Make navigating errors easier, wrapped in lambda so the error gets read out then read the line out afterwards for context
+  ;; Cancel reading the current line if I perform an action
+  (bind-key "C-c n" (lambda ()(interactive) (flycheck-next-error)(run-with-timer 3.4 nil 'cancel-timer (run-with-idle-timer 3 nil 'emacspeak-speak-line '(4)))))
+  (bind-key "C-c p" (lambda ()(interactive) (flycheck-previous-error) (run-with-timer 3.4 nil 'cancel-timer (run-with-idle-timer 3 nil 'emacspeak-speak-line '(4)))))
   (eldoc-mode +1)
   (tide-hl-identifier-mode +1)
-  ( tsserver-node-modules)
-  ) 
+  ( tsserver-node-modules))
 
 ;; Function to use your node_modules's TSServer to avoid possible collisions with project's Typescript version and Global Typescript version
 (defun tsserver-node-modules ()
@@ -944,3 +945,19 @@ with modifications made for ido"
 
 (add-hook 'after-init-hook 'org-agenda-list)
 
+;;; runs eslint --fix on the current file after save
+;;; alpha quality -- use at your own risk
+;;; From https://gist.github.com/ustun/73321bfcb01a8657e5b8
+(defun eslint-fix-file ()
+  (interactive)
+  (message "eslint --fixing the file" (buffer-file-name))
+  (shell-command (concat "eslint --fix " (buffer-file-name))))
+
+(defun eslint-fix-file-and-revert ()
+  (interactive)
+  (eslint-fix-file)
+  (revert-buffer t t))
+
+(add-hook 'js2-mode-hook
+          (lambda ()
+            (add-hook 'after-save-hook #'eslint-fix-file-and-revert)))
