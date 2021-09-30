@@ -961,3 +961,8 @@ with modifications made for ido"
 (add-hook 'js2-mode-hook
           (lambda ()
             (add-hook 'after-save-hook #'eslint-fix-file-and-revert)))
+
+(defun kill-type-definition-buffers ()
+  "Kills any *.d.ts buffers"
+  (interactive)
+  (kill-matching-buffers "[A-Za-z\-]*.d.ts[A-Za-z\-<>]*" t t))
