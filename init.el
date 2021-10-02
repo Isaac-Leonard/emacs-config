@@ -967,3 +967,4 @@ with modifications made for ido"
   "Kills any *.d.ts buffers"
   (interactive)
   (kill-matching-buffers "[A-Za-z\-]*.d.ts[A-Za-z\-<>]*" t t))
+(setq help-window-select t)
