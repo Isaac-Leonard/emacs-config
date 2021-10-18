@@ -692,7 +692,15 @@
 
 ;; Makes magit work
 (setq project-switch-commands t)
+
+;; Change the default ms-sql program to a more modern one
 (setq sql-ms-program "sqlcmd")
+(setq sql-connection-alist
+      '((connection-string-a (sql-product 'ms)
+                             (sql-server "127.0.0.1:1443")
+                             (sql-user "SA")
+                             (sql-password "P1$sword'")
+                             (sql-database "master"))))
 
 ;; Email
 ;;(use-package mu4e)
@@ -751,7 +759,10 @@
 (setq org-plantuml-executable-path (expand-file-name "/usr/local/bin/plantuml"))
 (setq org-plantuml-exec-mode 'plantuml)
 (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
-(org-babel-do-load-languages 'org-babel-load-languages '((plantuml . t)))
+(require 'ob-sql)
+(org-babel-do-load-languages 'org-babel-load-languages '(
+  (plantuml . t)
+  (sql t)))
 (setq org-odt-preferred-output-format "docx")
 
 (use-package pdf-tools
