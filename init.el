@@ -950,10 +950,8 @@ with modifications made for ido"
     (if point
         (goto-char point)
         (message "No non-ascii characters."))))
+
 (setq kill-ring-max 1000)
-
-
-(add-hook 'after-init-hook 'org-agenda-list)
 
 ;;; runs eslint --fix on the current file after save
 ;;; alpha quality -- use at your own risk
@@ -983,3 +981,8 @@ with modifications made for ido"
 
 ;; Kill zomby mu processes
 (add-hook 'mu4e-update-pre-hook (lambda ()(run-with-timer 240 nil 'mu4e-kill-update-mail)))
+;
+;; Start up dashboard
+(use-package dashboard
+  :config
+  (dashboard-setup-startup-hook))
