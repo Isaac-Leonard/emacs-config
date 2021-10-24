@@ -137,8 +137,6 @@
   (flycheck-add-next-checker 'typescript-tide '(warning . javascript-eslint))
   ;; Make navigating errors easier, wrapped in lambda so the error gets read out then read the line out afterwards for context
   ;; Cancel reading the current line if I perform an action
-  (bind-key "C-c n" (lambda ()(interactive) (flycheck-next-error)(run-with-timer 3.4 nil 'cancel-timer (run-with-idle-timer 3 nil 'emacspeak-speak-line '(4)))))
-  (bind-key "C-c p" (lambda ()(interactive) (flycheck-previous-error) (run-with-timer 3.4 nil 'cancel-timer (run-with-idle-timer 3 nil 'emacspeak-speak-line '(4)))))
   (eldoc-mode +1)
   (tide-hl-identifier-mode +1)
   ( tsserver-node-modules))
@@ -160,7 +158,7 @@
   (typescript-mode company flycheck)
   (flycheck-add-mode 'typescript-tslint 'web-mode)
   (flycheck-add-mode 'javascript-eslint 'tide-mode)
-  )
+  :config (advice-add 'tide-references :after (lambda ()(switch-to-buffer "*tide-references*")))  )
 
 (add-hook 'typescript-mode-hook #'setup-tide-mode)
 
@@ -699,7 +697,7 @@
       '((connection-string-a (sql-product 'ms)
                              (sql-server "127.0.0.1:1443")
                              (sql-user "SA")
-                             (sql-password "P1$sword'")
+                             (sql-password "P1:sword'")
                              (sql-database "master"))))
 
 ;; Email
@@ -979,3 +977,6 @@ with modifications made for ido"
   (interactive)
   (kill-matching-buffers "[A-Za-z\-]*.d.ts[A-Za-z\-<>]*" t t))
 (setq help-window-select t)
+
+(add-hook 'flycheck-mode-hook (lambda() (bind-key "C-c n" (lambda ()(interactive) (flycheck-next-error)(run-with-timer 3.4 nil 'cancel-timer (run-with-idle-timer 3 nil 'emacspeak-speak-line '(4)))))
+				(bind-key "C-c p" (lambda ()(interactive) (flycheck-previous-error) (run-with-timer 3.4 nil 'cancel-timer (run-with-idle-timer 3 nil 'emacspeak-speak-line '(4)))))))
