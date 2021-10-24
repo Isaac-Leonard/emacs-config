@@ -980,3 +980,6 @@ with modifications made for ido"
 
 (add-hook 'flycheck-mode-hook (lambda() (bind-key "C-c n" (lambda ()(interactive) (flycheck-next-error)(run-with-timer 3.4 nil 'cancel-timer (run-with-idle-timer 3 nil 'emacspeak-speak-line '(4)))))
 				(bind-key "C-c p" (lambda ()(interactive) (flycheck-previous-error) (run-with-timer 3.4 nil 'cancel-timer (run-with-idle-timer 3 nil 'emacspeak-speak-line '(4)))))))
+
+;; Kill zomby mu processes
+(add-hook 'mu4e-update-pre-hook (lambda ()(run-with-timer 240 nil 'mu4e-kill-update-mail)))
