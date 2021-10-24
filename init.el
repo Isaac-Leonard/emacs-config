@@ -985,4 +985,7 @@ with modifications made for ido"
 ;; Start up dashboard
 (use-package dashboard
   :config
-  (dashboard-setup-startup-hook))
+  (dashboard-setup-startup-hook)
+  (add-to-list 'dashboard-items '(projects . 10))
+  :custom (dashboard-projects-backend 'projectile)
+  )
