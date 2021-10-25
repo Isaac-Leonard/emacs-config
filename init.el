@@ -981,11 +981,44 @@ with modifications made for ido"
 
 ;; Kill zomby mu processes
 (add-hook 'mu4e-update-pre-hook (lambda ()(run-with-timer 240 nil 'mu4e-kill-update-mail)))
-;
+
 ;; Start up dashboard
 (use-package dashboard
   :config
   (dashboard-setup-startup-hook)
   (add-to-list 'dashboard-items '(projects . 10))
+  (add-to-list 'dashboard-items '(recents . 20))
+  (add-to-list 'dashboard-items '(agenda) t)
+  ;; advice-add doesn't work for line movement functions for some reason
+  ;; Copied this from emacspeak/lsip/advice.el with modifications for dashboard
+  (cl-loop
+   for f in
+   '(dashboard-next-line dashboard-previous-line)
+   do
+   (eval
+    `(defadvice ,f (after emacspeak pre act comp)
+       "Speak line. Speak  (visual) line if
+`visual-line-mode' is  on, and 
+indicate  point  by an aural highlight. Moving to 
+beginning or end of a physical line produces an  auditory icon."
+       (when (ems-interactive-p)
+	 (cond
+          ((or line-move-visual visual-line-mode) (emacspeak-speak-visual-line))
+          (t (emacspeak-speak-line)))))))
+  (advice-add 'dashboard-jump-to-projects :after (lambda()(emacspeak-speak-line)))
+  (advice-add 'dashboard-jump-to-recent-files :after (lambda()(emacspeak-speak-line)))
+  (advice-add 'dashboard-jump-to-bookmarks :after (lambda()(emacspeak-speak-line)))
+  ;; Save recentf at regular intervals
+  (run-with-timer 3 30 'recentf-save-list)
+
+  ;; Exclude the recentf file itself
+  (add-to-list 'recentf-exclude
+               (expand-file-name "~/.emacs.d/var/recentf-save.el"))
+  (add-to-list 'recentf-exclude
+               (expand-file-name "~/org/agenda-files.txt"))
+  ;; Exclude the org-agenda files
+  ;; (they flood the recentf because dashboard always checks their content)
+  (add-to-list 'recentf-exclude (org-agenda-files))
+
   :custom (dashboard-projects-backend 'projectile)
-  )
+  (dashboard-filter-agenda-entry 'dashboard-no-filter-agenda))
