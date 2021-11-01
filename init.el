@@ -1022,3 +1022,6 @@ beginning or end of a physical line produces an  auditory icon."
 
   :custom (dashboard-projects-backend 'projectile)
   (dashboard-filter-agenda-entry 'dashboard-no-filter-agenda))
+(use-package projectile
+  :init
+  (projectile-mode +1))
