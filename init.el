@@ -665,17 +665,7 @@
               ("C-c C-c Q" . lsp-workspace-shutdown)
               ("C-c C-c s" . lsp-rust-analyzer-status))
   :config
-  ;; uncomment for less flashiness
-  ;; (setq lsp-eldoc-hook nil)
-  ;; (setq lsp-enable-symbol-highlighting nil)
-  ;; (setq lsp-signature-auto-activate nil)
-
-  ;; comment to disable rustfmt on save
-  (setq rustic-format-on-save t)
-  (add-hook 'rustic-mode-hook 'rk/rustic-mode-hook))
-(defun rk/rustic-mode-hook ()
-  ;; so that run C-c C-c C-r works without having to confirm
-  (setq-local buffer-save-without-query t))
+  (setq rustic-format-on-save t))
 
 (use-package cdlatex)
 
@@ -851,37 +841,37 @@
 (defun run-spotifyd ()
   "Runs spotifyd and seemlessly restarts it on crashes"
   (interactive)
-  (if (internet-up-p "play.spotify.com") (progn
-  (make-process
-   :name "spotifyd"
-   :command (list "spotifyd" "--no-daemon")
-   :sentinel (lambda (a b)
-	       (run-spotifyd)))
-  (sleep-for 1)
-  (smudge-api-device-list
-   (lambda (json)
-     (when-let ((devices (gethash 'devices json)))
-       (while (let* ((device (car devices))
-                     (is-active (smudge-device-get-device-is-active device))
-		     (name (smudge-device-get-device-name device))
-		     (is-daemon (= (string-match "Demon" name) 0))
-		     (device-id (smudge-device-get-device-id device)))
-                (progn
-                  (if (and device is-active)
-                    (progn
-                      (setq smudge-selected-device-id device-id)
-                      (smudge-controller-player-status))
-		    (if is-daemon
-			(smudge-api-transfer-player
-			 device-id
-			 (lambda (json)
-                           (setq smudge-selected-device-id device-id)
-			   (smudge-controller-set-volume 70)
-			   (smudge-controller-toggle-play)
-                           (message "Device '%s' selected" name)))))
-                  (setq devices (cdr devices))
-                  (and device (not (or is-daemon is-active))))))))))
-    (message "spotify appears to be down")))
+  (if (internet-up-p "play.spotify.com")
+      (progn
+	(make-process
+	 :name "spotifyd"
+	 :command (list "spotifyd" "--no-daemon")
+	 :sentinel (lambda (a b)
+		     (run-spotifyd)))
+	(run-with-timer 1 nil  (lambda() (smudge-api-device-list
+					  (lambda (json)
+					    (when-let ((devices (gethash 'devices json)))
+					      (while (let* ((device (car devices))
+							    (is-active (smudge-device-get-device-is-active device))
+							    (name (smudge-device-get-device-name device))
+							    (is-daemon (= (string-match "Demon" name) 0))
+							    (device-id (smudge-device-get-device-id device)))
+						       (progn
+							 (if (and device is-active)
+							     (progn
+							       (setq smudge-selected-device-id device-id)
+							       (smudge-controller-player-status))
+							   (if is-daemon
+							       (smudge-api-transfer-player
+								device-id
+								(lambda (json)
+								  (setq smudge-selected-device-id device-id)
+								  (smudge-controller-set-volume 70)
+								  (smudge-controller-toggle-play)
+								  (message "Device '%s' selected" name)))))
+							 (setq devices (cdr devices))
+							 (and device (not (or is-daemon is-active))))))))))))
+			(message "spotify appears to be down")))
 
 ;; Tries to start the music when we open emacs
 (add-hook 'after-init-hook (lambda ()
@@ -1025,3 +1015,7 @@ beginning or end of a physical line produces an  auditory icon."
 (use-package projectile
   :init
   (projectile-mode +1))
+
+(use-package python-mode
+  :hook
+  (python . (lambda () (flycheck-add-next-checker 'lsp '(warning . python-flake8)))))
