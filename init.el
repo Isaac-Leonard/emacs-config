@@ -270,6 +270,27 @@
 (setq-default org-catch-invisible-edits 'smart)
 ;; Spellchecking
 (use-package flyspell-correct
+  :config
+  (defun custom-flycheck-executable-find (executable)
+  "Replaces flychecks original so it can find project specific versions of eslint.x
+Resolve EXECUTABLE to a full path.
+
+Like `executable-find', but supports relative paths.
+
+Attempts invoking `executable-find' first; if that returns nil,
+and EXECUTABLE contains a directory component, expands to a full
+path and tries invoking `executable-find' again."
+  ;; file-name-directory returns non-nil iff the given path has a
+  ;; directory component.
+  (message executable)
+  (or
+   (when (string-equal executable "eslint")
+     (concat (projectile-project-root) "node_modules/.bin/eslint"))
+   (or
+    (executable-find executable)
+    (when (file-name-directory executable)
+      (executable-find (expand-file-name executable))))))
+:custom (flycheck-executable-find 'custom-flycheck-executable-find)
   :after flyspell
   :bind (:map flyspell-mode-map ("C-;" . flyspell-correct-wrapper)))
 
@@ -1068,3 +1089,4 @@ interactive `pyvenv-workon' function before `lsp'"
 (use-package poetry)
 (use-package py-isort
   :hook ((python-mode . (lambda () (add-hook 'before-save-hook  'py-isort-before-save)))))
+
