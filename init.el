@@ -271,12 +271,13 @@
 ;; Spellchecking
 (use-package flyspell-correct
   :config
+  (defun find-eslint-bin ()
+    "Returns the eslint path if it exists"
+    (concat (locate-dominating-file (buffer-file-name) "node_modules/.bin/eslint")  "node_modules/.bin/eslint"))
   (defun custom-flycheck-executable-find (executable)
   "Replaces flychecks original so it can find project specific versions of eslint.x
 Resolve EXECUTABLE to a full path.
-
 Like `executable-find', but supports relative paths.
-
 Attempts invoking `executable-find' first; if that returns nil,
 and EXECUTABLE contains a directory component, expands to a full
 path and tries invoking `executable-find' again."
