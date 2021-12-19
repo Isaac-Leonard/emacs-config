@@ -286,12 +286,12 @@ path and tries invoking `executable-find' again."
   (message executable)
   (or
    (when (string-equal executable "eslint")
-     (concat (projectile-project-root) "node_modules/.bin/eslint"))
+     (find-eslint-bin))
    (or
     (executable-find executable)
     (when (file-name-directory executable)
       (executable-find (expand-file-name executable))))))
-:custom (flycheck-executable-find 'custom-flycheck-executable-find)
+  :custom (flycheck-executable-find 'custom-flycheck-executable-find)
   :after flyspell
   :bind (:map flyspell-mode-map ("C-;" . flyspell-correct-wrapper)))
 
