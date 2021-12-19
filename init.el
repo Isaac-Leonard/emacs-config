@@ -1076,13 +1076,16 @@ activate based on the project name, using
 cannot determine the virtualenv automatically, first call the
 interactive `pyvenv-workon' function before `lsp'"
     (interactive)
-    (let ((pvenv (dd/py-workon-project-venv)))
-      (if pvenv
-          (lsp)
-	(progn
-          (call-interactively #'pyvenv-workon)
-          (lsp)))))
-
+    (if (poetry-find-project-root)
+	(progn(poetry-venv-workon)
+	      (lsp))
+      (let ((pvenv (dd/py-workon-project-venv)))
+	(if pvenv
+            (lsp)
+	  (progn
+            (call-interactively #'pyvenv-workon)
+            (lsp))))))
+  
   (bind-key (kbd "C-c C-a") #'dd/py-auto-lsp python-mode-map))
 
 (use-package lsp-pyright
