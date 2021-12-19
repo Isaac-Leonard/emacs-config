@@ -1094,3 +1094,12 @@ interactive `pyvenv-workon' function before `lsp'"
 (use-package py-isort
   :hook ((python-mode . (lambda () (add-hook 'before-save-hook  'py-isort-before-save)))))
 
+
+(setq lsp-sqls-connections '(((driver . "postgresql")
+			      (dataSourceName b. "host=127.0.0.1 port=5432 user=docker password=password dbname=docker"))))
+
+(defun my-sql-hook ()
+  (add-to-list 'flycheck-disabled-checkers 'lsp)
+  (flycheck-select-checker 'sql-sqlint)
+  (lsp))
+(add-hook 'sql-mode-hook #'my-sql-hook)
