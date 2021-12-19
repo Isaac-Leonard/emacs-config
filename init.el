@@ -7,7 +7,7 @@
 ;; Customising emacspeak
 (global-set-key (kbd "M-c") 'emacspeak-speak-current-column)
 (dtk-set-rate 720 t)
-(setq emacspeak-auditory-icon-function 'emacspeak-queue-auditory-icon)
+(setq emacspeak-auditory-icon-function 'emacspeak-serve-auditory-icon)
 ;; Set correct environment variables
 ;;(require 'exec-path-from-shell)
 
