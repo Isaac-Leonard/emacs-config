@@ -354,29 +354,6 @@ path and tries invoking `executable-find' again."
       (insert (get-readable-time))
       )
 
-;; Automating work
-(defun clock-on () "Opens ~/work/hours.org and adds the time to the end of the file"
-      (interactive)
-      (find-file "~/work/hours.org")
-      (goto-char (point-max))
-      (insert "** ")
-      (org-time-stamp t)
-      (insert "\nStart ")
-      (insert-current-time)
-      (insert "\n")
-      (save-buffer)
-      )
-
-(defun clock-off () "Jumps to the end of ~/work/hours.org and inserts the time"
-      (interactive)
-      (find-file "~/work/hours.org")
-      (goto-char (point-max))
-      (insert "\nEnd ")
-      (insert-current-time)
-      (insert "\n")
-      (save-buffer)
-      )
-
 ;; Music and audiobooks setup
 (use-package emms
   :straight (emms :type git :host github :repo "emacsmirror/emms")
@@ -1103,3 +1080,30 @@ interactive `pyvenv-workon' function before `lsp'"
   (flycheck-select-checker 'sql-sqlint)
   (lsp))
 (add-hook 'sql-mode-hook #'my-sql-hook)
+
+(defun custom-time-stamp ()
+  (format-time-string (concat "[" (substring (car org-time-stamp-formats) 1 -1) "]") (current-time)))
+
+(defun org-timestamp-in-buffer ()
+  (save-excursion (goto-char (point-min))
+		  (search-forward (custom-time-stamp) nil t)))
+
+;; Automating work
+(defun clock-on ()
+  "Opens ~/work/hours.org and adds the time to the end of the file"
+  (interactive)
+  (find-file "~/work/hours.org")
+  (goto-char (point-max))
+  (when (not (org-timestamp-in-buffer))
+    (insert "* ")
+    (insert (custom-time-stamp))
+    (insert "\n"))
+  (org-clock-in)
+  (save-buffer))
+
+(defun clock-off ()
+  "Jumps to the end of ~/work/hours.org and inserts the time"
+  (interactive)
+  (save-window-excursion (switch-to-buffer "hours.org")
+		       (org-clock-out)
+		       (save-buffer)))
