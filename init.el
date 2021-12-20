@@ -357,22 +357,21 @@ path and tries invoking `executable-find' again."
 ;; Music and audiobooks setup
 (use-package emms
   :straight (emms :type git :host github :repo "emacsmirror/emms")
-:config
-(require 'emms-setup)
-(require 'emms-player-mplayer)
-(emms-all)
-(setq emms-player-list '(
-                         emms-player-mpg321
-                         emms-player-ogg123
-                         emms-player-mplayer))
-(defun emms-player-mplayer-volume(amount)
-  (process-send-string
-   emms-player-simple-process-name
-   (format "volume %d\n" amount)))
-(setq emms-volume-change-function 'emms-player-mplayer-volume)
-(setq emms-source-file-default-directory "~/audiobooks/")
-(emms-add-directory-tree emms-source-file-default-directory)
-)
+  :config
+  (require 'emms-setup)
+  (require 'emms-player-mplayer)
+  (emms-all)
+  (setq emms-player-list '(
+                           emms-player-mpg321
+                           emms-player-ogg123
+                           emms-player-mplayer))
+  (defun emms-player-mplayer-volume(amount)
+    (process-send-string
+     emms-player-simple-process-name
+     (format "volume %d\n" amount)))
+  (setq emms-volume-change-function 'emms-player-mplayer-volume)
+  (setq emms-source-file-default-directory "~/audiobooks/")
+  (emms-add-directory-tree emms-source-file-default-directory))
 
 ;;(define-emms-simple-player mplayer '(file url)
 ;;     (regexp-opt '(".ogg" ".mp3" ".wav" ".mpg" ".mpeg" ".wmv" ".wma"
