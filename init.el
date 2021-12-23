@@ -371,7 +371,20 @@ path and tries invoking `executable-find' again."
      (format "volume %d\n" amount)))
   (setq emms-volume-change-function 'emms-player-mplayer-volume)
   (setq emms-source-file-default-directory "~/audiobooks/")
-  (emms-add-directory-tree emms-source-file-default-directory))
+  (emms-add-directory-tree emms-source-file-default-directory)
+  (defun emms-bookmark-on-pause ()
+    (if (emms-playlist-current-selected-track)
+     (emms-bookmarks-set-current "paused")
+      (error "No current track to bookmark")))
+  (defun emms-jump-to-bookmark-on-play ()
+    "Goes to a paused bookmark if its set when a track starts playing"
+    (let ((bookmark (emms-bookmarks-next)))
+    (while (not (or (equal bookmark "No next bookmark") (equal bookmark "paused")))
+      (setq bookmark (emms-bookmarks-next))))
+    (emms-bookmarks-clear))
+  :hook (emms-player-paused . emms-bookmark-on-pause)
+  (emms-player-started . emms-jump-to-bookmark-on-play))
+
 
 ;;(define-emms-simple-player mplayer '(file url)
 ;;     (regexp-opt '(".ogg" ".mp3" ".wav" ".mpg" ".mpeg" ".wmv" ".wma"
