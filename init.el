@@ -1106,3 +1106,4 @@ interactive `pyvenv-workon' function before `lsp'"
   (save-window-excursion (switch-to-buffer "hours.org")
 		       (org-clock-out)
 		       (save-buffer)))
+(load-file "zoom.config.el.gpg")
