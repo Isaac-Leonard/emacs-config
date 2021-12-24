@@ -1120,3 +1120,4 @@ interactive `pyvenv-workon' function before `lsp'"
 		       (org-clock-out)
 		       (save-buffer)))
 (load-file "zoom.config.el.gpg")
+(add-hook 'dired-mode-hook #'dired-hide-details-mode)
