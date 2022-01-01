@@ -8,6 +8,7 @@
 (global-set-key (kbd "M-c") 'emacspeak-speak-current-column)
 (dtk-set-rate 720 t)
 (setq emacspeak-auditory-icon-function 'emacspeak-serve-auditory-icon)
+(setq emacspeak-pronounce-dictionaries-file (expand-file-name "~/.emacs.d/pronounciations.el"))
 ;; Set correct environment variables
 ;;(require 'exec-path-from-shell)
 
