@@ -1122,3 +1122,88 @@ interactive `pyvenv-workon' function before `lsp'"
 		       (save-buffer)))
 (load-file "zoom.config.el.gpg")
 (add-hook 'dired-mode-hook #'dired-hide-details-mode)
+;; Emacspeaks' usage of the read function seems to be broken
+(setq emacspeak-pronounce-pronunciation-keys '(("buffer" . "buffer")
+ ("file" . "file")
+ ("directory" . "directory")
+ ("mode" . "mode")))
+(defun emacspeak-pronounce-get-key ()
+  "Collect key from user.
+Returns a pair of the form (key-type . key)."
+  (cl-declare (special emacspeak-pronounce-pronunciation-keys))
+  (let ((key nil)
+        (key-type
+         (completing-read
+          "Define pronunciation that is specific to: "
+          emacspeak-pronounce-pronunciation-keys nil t)))
+    (when (called-interactively-p 'interactive) ;cleanup minibuffer history
+      (pop minibuffer-history))
+    (cond
+     ((string-equal key-type "buffer")
+      (setq key (buffer-name))) ;handled differently
+     ((string-equal key-type "file")
+      (setq key (buffer-file-name))
+      (or key
+          (error "Current buffer is not associated with a file"))
+      (setq key (intern key)))
+     ((string-equal key-type "directory")
+      (setq key
+            (or
+             (condition-case nil
+                 (file-name-directory (buffer-file-name))
+               (error nil))
+             default-directory))
+      (or key (error "No directory associated with current buffer"))
+      (setq key (intern key)))
+     ((string-equal key-type "mode")
+      (setq key
+            major-mode)
+      (or key (error "No major mode found for current buffer")))
+     (t (error "Cannot define pronunciations with key type %s" key-type)))
+    (cons key-type key)))
+(setq emacspeak-maths-inferior-program "/usr/local/opt/node@16/bin/node")
+
+(defun replace-img-with-alt ()
+  (interactive)
+  (save-excursion (goto-char (point-min))
+		  (while(search-forward "<img " nil t)
+		    (backward-char 5)
+		    (let ((start (point)))
+		      (search-forward "alt=\"")
+		      (kill-region start (point))
+		      (search-forward "\"" nil t)
+		      (setq start (- (point) 1))
+		      (search-forward "/>")
+		      (kill-region start (point))))))
+
+(defun remove-tex-bf ()
+  "Remove {\bf ...} from tex files"
+  (interactive)
+  (while (search-forward "{\\bf " nil t)
+    (let ((pos (point)))
+      (sp-end-of-sexp)
+      (delete-char 1)
+      (goto-char pos)
+      (delete-char -5))))
+
+(defun join-broken-sentences ()
+  (interactive)
+  (save-excursion 
+    (while (re-search-forward "\\([a-z]\\)\n\\\s*\\([a-z]\\)" nil t)
+      (replace-match "\\1 \\2"))))
+
+(defun replace-string-in-buffer (str1 str2)
+  (save-excursion
+    (goto-char (point-min))
+    (while (search-forward str1 nil t)
+      (replace-match str2))))
+
+(defun clean-converted-org-file ()
+  (interactive)
+  (save-excursion (goto-char (point-min))
+		  (join-broken-sentences)
+		  (convert-to-one-sentence-per-line)
+		  (replace-string-in-buffer "\\(" "$")
+		  (replace-string-in-buffer "\\)" "$")
+		  (replace-string-in-buffer "\\," " ")))
+
