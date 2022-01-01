@@ -1120,7 +1120,7 @@ interactive `pyvenv-workon' function before `lsp'"
   (save-window-excursion (switch-to-buffer "hours.org")
 		       (org-clock-out)
 		       (save-buffer)))
-(load-file "zoom.config.el.gpg")
+(load-file (expand-file-name "~/.emacs.d/zoom.config.el.gpg"))
 (add-hook 'dired-mode-hook #'dired-hide-details-mode)
 ;; Emacspeaks' usage of the read function seems to be broken
 (setq emacspeak-pronounce-pronunciation-keys '(("buffer" . "buffer")
