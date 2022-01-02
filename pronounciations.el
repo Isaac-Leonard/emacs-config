@@ -33,10 +33,12 @@
 	    " ")))
 
 (emacspeak-pronounce-set-dictionary 'org-mode
-				    '(				      ("{\\delta}" . " Dirac delta ")
+				    '(("\\oint" . " closed \\int")
+				      ("{\\delta}" . " Dirac delta ")
 
 				      ("\\int_\\([a-zA-Z0-9]\\|\\({[a-zA-Z0-9]_[a-zA-Z0-9]}\\)\\)\\^\\([a-zA-Z0-9]\\|\\({[a-zA-Z0-9]_[a-zA-Z0-9]}\\)\\)" re-search-forward . emacspeak-pronounce-latex-integral)
 				      ("[a-z]([a-zA-Z])" re-search-forward . (lambda(str) (concat (substring str 0 1) " of " (substring str 2 -1) " ")))
+				      ("\\int_" . " \\int over ")
 				      ("\\int " . " integral ")
 				      ("_{i=1}^n" . " from i=1 to n ")
 				      ("{\\\\bf\s[a-zA-Z]}" re-search-forward . (lambda (str) (concat " " (substring str 5 6) " ")))
@@ -55,4 +57,10 @@
 				      ("{-1}" . " negative 1 ")
 				      ("\\ln" . " natural log ")
 				      ("\left" . " left")
-				      ("\\tau" . " tou ")("}{" . " over ")("\\frac". " fraction ")("\\;" . " dot ")("\\geq" . " greater than or equal to ") ("\\leq" . " less than or equal to ") ("\\ge" . " greater than ") ("\\le" . " less than ") ("&=" . " equal to ")("\\cdot" . " dot ") ("\\sqrt" . " square root")("\\gamma" . " gamma") ("^2" . " squared ") ("{AB}" . "{A B}") ("_a" . " sub ay ") ("\\mod" . " modulo ") ("$" . " ") ("_" . " sub ") ("^" . " to the power of ") ("{". " start ") ("}" . " end ") ("\\" . " ")))
+				      ("\\tau" . " tou ")("}{" . " over ")("\\frac". " fraction ")("\\;" . " dot ")("\\geq" . " greater than or equal to ") ("\\leq" . " less than or equal to ") ("\\ge" . " greater than ") ("\\le" . " less than ") ("&=" . " equal to ")("\\cdot" . " dot ") ("\\sqrt" . " square root")("\\gamma" . " gamma") ("^2" . " squared ") ("{AB}" . "{A B}") ("_a" . " sub ay ") ("\\mod" . " modulo ") ("$" . " ")
+				      ("x_0" . "x0")
+				      ("_" . " sub ")
+				      ("^" . " to the power of ")
+				      ("{". " start ")
+				      ("}" . " end ")
+				      ("\\" . " ")))
