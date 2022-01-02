@@ -1205,5 +1205,6 @@ Returns a pair of the form (key-type . key)."
 		  (convert-to-one-sentence-per-line)
 		  (replace-string-in-buffer "\\(" "$")
 		  (replace-string-in-buffer "\\)" "$")
-		  (replace-string-in-buffer "\\," " ")))
+		  (replace-string-in-buffer "\\," " ")
+		  (replace-string-in-buffer "\n\n" "\n")))
 
