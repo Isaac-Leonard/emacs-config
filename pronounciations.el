@@ -42,7 +42,7 @@
 				      ("\\int " . " integral ")
 				      ("_{i=1}^n" . " from i=1 to n ")
 				      ("{\\\\bf\s[a-zA-Z]}" re-search-forward . (lambda (str) (concat " " (substring str 5 6) " ")))
-				      ("[A-Z]/[A-Z]" re-search-forward . (lambda (str) (concat " " (replace-regexp-in-string "/" " over " str) " ")))
+				      ("[A-Z0-9]/[A-Z0-9]" re-search-forward . (lambda (str) (replace-regexp-in-string "/" " over " str)))
 				      ("{[0-9]+}" re-search-forward . (lambda (str) (concat " " (substring str 1 -1) " ")))
 				      ("{-x}" . " negative x ")
 				      ("\\frac{1}" . " 1over ")
