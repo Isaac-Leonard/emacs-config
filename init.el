@@ -1206,5 +1206,6 @@ Returns a pair of the form (key-type . key)."
 		  (replace-string-in-buffer "\\(" "$")
 		  (replace-string-in-buffer "\\)" "$")
 		  (replace-string-in-buffer "\\," " ")
+		  (replace-string-in-buffer " \n" "\n")
 		  (replace-string-in-buffer "\n\n" "\n")))
 
