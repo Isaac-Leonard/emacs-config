@@ -33,9 +33,15 @@
 	    " ")))
 
 (emacspeak-pronounce-set-dictionary 'org-mode
-				    '(("\\oint" . " closed \\int")
+				    '(("\\equiv" . "\\equivalent")
+				      ("\\nabla\\cdot" . " divergence ")
+				      ("\\nabla\\times" . " curl ")
+				      ("\\nabla" . " gradient ")
+				      ("\\begin{array}" . " start array ")
+				      ("\\end{array}" . " end array ")
+				      ("\\\\[mh]box{[a-zA-Z0-9$_\s]+}" re-search-forward . (lambda (str) (concat " " (substring str 6 -1) " ")))
+				      ("\\oint" . " closed \\int")
 				      ("{\\delta}" . " Dirac delta ")
-
 				      ("\\int_\\([a-zA-Z0-9]\\|\\({[a-zA-Z0-9]_[a-zA-Z0-9]}\\)\\)\\^\\([a-zA-Z0-9]\\|\\({[a-zA-Z0-9]_[a-zA-Z0-9]}\\)\\)" re-search-forward . emacspeak-pronounce-latex-integral)
 				      ("[a-z]([a-zA-Z])" re-search-forward . (lambda(str) (concat (substring str 0 1) " of " (substring str 2 -1) " ")))
 				      ("\\int_" . " \\int over ")
