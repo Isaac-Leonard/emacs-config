@@ -1101,6 +1101,8 @@ interactive `pyvenv-workon' function before `lsp'"
   (save-excursion (goto-char (point-min))
 		  (search-forward (custom-time-stamp) nil t)))
 
+(setq org-duration-format (quote h:mm))
+
 ;; Automating work
 (defun clock-on ()
   "Opens ~/work/hours.org and adds the time to the end of the file"
@@ -1211,3 +1213,4 @@ Returns a pair of the form (key-type . key)."
 
 (use-package vlf
   :config (require 'vlf-setup))
+
