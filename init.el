@@ -677,6 +677,16 @@ path and tries invoking `executable-find' again."
               ("C-c C-c Q" . lsp-workspace-shutdown)
               ("C-c C-c s" . lsp-rust-analyzer-status))
   :config
+  ;; This replaces the inbuilt one because the inbuilt one  uses format file instead of buffer which causes the buffer to revert each time and lsp has to restart on each save which gets very annoying
+  (defun rustic-before-save-hook ()
+	    "Don't throw error if rustfmt isn't installed, as it makes saving impossible."
+	    (when (and (rustic-format-on-save-p)
+		       (not (rustic-compilation-process-live t)))
+	      (condition-case nil
+		  (progn
+		    (rustic-format-buffer)
+		    (sit-for 0.1))
+		(error nil))))
   (setq rustic-format-on-save t))
 
 (use-package cdlatex)
