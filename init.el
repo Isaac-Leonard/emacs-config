@@ -70,9 +70,13 @@
   (java-mode . lsp)
   :custom
   (lsp-server-install-dir "~/language-servers")
-  (lsp-enable-snippet nil)
   (lsp-keymap-prefix "s-l")
-  )
+  (lsp-eldoc-render-all nil)
+  ;; Rust stuff
+  (lsp-rust-analyzer-cargo-watch-command "clippy")
+  (lsp-rust-analyzer-server-display-inlay-hints t)
+  (lsp-rust-analyzer-completion-add-call-argument-snippets nil)
+  (lsp-rust-analyzer-completion-add-call-parenthesis nil))
 
 ;; LSP support for tex
 ;; Disabled cause its slow and causes crashes
@@ -424,7 +428,6 @@ path and tries invoking `executable-find' again."
   "Download ics file and add it to file"
   (let ((tmpfile (url-file-local-copy url)))
     (icalendar-import-file tmpfile file)
-    (kill-buffer)
     (kill-buffer)))
 
 (defun update-calendars ()
@@ -677,17 +680,23 @@ path and tries invoking `executable-find' again."
               ("C-c C-c Q" . lsp-workspace-shutdown)
               ("C-c C-c s" . lsp-rust-analyzer-status))
   :config
-  ;; This replaces the inbuilt one because the inbuilt one  uses format file instead of buffer which causes the buffer to revert each time and lsp has to restart on each save which gets very annoying
-  (defun rustic-before-save-hook ()
-	    "Don't throw error if rustfmt isn't installed, as it makes saving impossible."
-	    (when (and (rustic-format-on-save-p)
-		       (not (rustic-compilation-process-live t)))
-	      (condition-case nil
-		  (progn
-		    (rustic-format-buffer)
-		    (sit-for 0.1))
-		(error nil))))
-  (setq rustic-format-on-save t))
+    ;; (setq lsp-enable-symbol-highlighting nil)
+  ;; (setq lsp-signature-auto-activate nil)
+  (advice-add 'rustic-cargo-run :after (lambda (&optional v w)(switch-to-buffer "*cargo-run*")))
+  ;; comment to disable rustfmt on save
+  (setq rustic-format-on-save t)
+  (add-hook 'rustic-mode-hook 'rk/rustic-mode-hook)
+  (defun rk/rustic-mode-hook ()
+    ;; so that run C-c C-c C-r works without having to confirm, but don't try to
+    ;; save rust buffers that are not file visiting. Once
+    ;; https://github.com/brotzeit/rustic/issues/253 has been resolved this should
+    ;; (not )o longer be necessary.
+    (when buffer-file-name
+      (setq-local buffer-save-without-query t))
+    ;; Gets set to nil somewhere for some reason so set it back
+    (setq flycheck-display-errors-function 'flycheck-display-error-messages)
+    (setq tab-width 4)
+    ))
 
 (use-package cdlatex)
 
