@@ -1233,3 +1233,23 @@ Returns a pair of the form (key-type . key)."
 (use-package vlf
   :config (require 'vlf-setup))
 
+
+(load-file (expand-file-name "~/.emacs.d/slack.config.el.gpg"))
+
+
+(define-derived-mode bs-mode prog-mode "borrow script")
+(lsp-register-client
+ (make-lsp-client
+  :new-connection (lsp-stdio-connection '("cargo" "run" "--bin" "lsp"))
+  :server-id 'bscript
+  :major-modes '(bs-mode)
+  ))
+
+(add-to-list 'lsp-language-id-configuration '(bs-mode . "bscript"))
+
+(setq projectile-use-git-grep t)
+(use-package ess)
+(use-package polymode)
+(use-package poly-R)
+
+(advice-add 'ess-eval-region-or-function-or-paragraph-and-step :after (lambda (&optional v w)(switch-to-buffer "*R*")))
