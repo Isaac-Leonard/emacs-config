@@ -17,7 +17,7 @@
 (emacspeak-pronounce-set-dictionary 'eww-mode
  '(("[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}T[0-9]\\{2\\}:[0-9]\\{2\\}:[0-9]\\{2\\}\\(\\.[0-9]\\{3\\}\\)?\\([zZ]\\|\\([+-][0-9]\\{2\\}:[0-9]\\{2\\}\\)\\)" re-search-forward . emacspeak-speak-decode-rfc-3339-datetime) ("http://search.yahoo.com/mrss/" . "media") ("http://purl.org/dc/elements/1.1/" . "DC") ("http://www.w3.org/1999/xhtml" . " xhtml ") ("http://www.w3.org/2001/XMLSchema" . " XSD ") ("http://www.w3.org/2001/XMLSchema-instance" . " XSI ") ("http://www.w3.org/2001/vxml" . " vxml ") ("http://www.w3.org/2001/xml-events" . " XEvents ") ("http://www.w3.org/2002/xforms" . " XForms ") ("http://www.w3.org/1999/XSL/Transform" . " XSLT ") ("http://www.w3.org/2003/XInclude" . "XInclude") ("http://www.w3.org/2002/06/xhtml2" . " xhtml2 ") ("http://www.w3.org/1999/02/22-rdf-syntax-ns#" . "RDF Syntax") ("http://www.w3.org/2005/Atom" . " atom ")))
 (emacspeak-pronounce-set-dictionary 'latex-mode
-				    '(("^" . "caret")))
+				    '(("^" . "  caret  ")))
 
 (defun emacspeak-pronounce-latex-integral (str)
   (let* ((prefix (concat " integral from "))
