@@ -129,7 +129,28 @@
 ;; Error checking, never actually noticed what it does though
 (use-package flycheck
   :hook (lsp-mode . flycheck-mode)
-  :config (advice-add 'flycheck-verify-setup :after (lambda ()(switch-to-buffer "*Flycheck checkers*"))))
+  :config (advice-add 'flycheck-verify-setup :after (lambda ()(switch-to-buffer "*Flycheck checkers*")))
+  (defun find-eslint-bin ()
+    "Returns the eslint path if it exists"
+    (concat (locate-dominating-file (buffer-file-name) "node_modules/.bin/eslint")  "node_modules/.bin/eslint"))
+  (defun custom-flycheck-executable-find (executable)
+  "Replaces flychecks original so it can find project specific versions of eslint.x
+Resolve EXECUTABLE to a full path.
+Like `executable-find', but supports relative paths.
+Attempts invoking `executable-find' first; if that returns nil,
+and EXECUTABLE contains a directory component, expands to a full
+path and tries invoking `executable-find' again."
+  ;; file-name-directory returns non-nil iff the given path has a
+  ;; directory component.
+  (message executable)
+  (or
+   (when (string-equal executable "eslint")
+     (find-eslint-bin))
+   (or
+    (executable-find executable)
+    (when (file-name-directory executable)
+      (executable-find (expand-file-name executable))))))
+  :custom (flycheck-executable-find 'custom-flycheck-executable-find))
 
 ;;This works somehow
 ;; Sets up emacs for typescript using tide-mode
@@ -275,28 +296,6 @@
 (setq-default org-catch-invisible-edits 'smart)
 ;; Spellchecking
 (use-package flyspell-correct
-  :config
-  (defun find-eslint-bin ()
-    "Returns the eslint path if it exists"
-    (concat (locate-dominating-file (buffer-file-name) "node_modules/.bin/eslint")  "node_modules/.bin/eslint"))
-  (defun custom-flycheck-executable-find (executable)
-  "Replaces flychecks original so it can find project specific versions of eslint.x
-Resolve EXECUTABLE to a full path.
-Like `executable-find', but supports relative paths.
-Attempts invoking `executable-find' first; if that returns nil,
-and EXECUTABLE contains a directory component, expands to a full
-path and tries invoking `executable-find' again."
-  ;; file-name-directory returns non-nil iff the given path has a
-  ;; directory component.
-  (message executable)
-  (or
-   (when (string-equal executable "eslint")
-     (find-eslint-bin))
-   (or
-    (executable-find executable)
-    (when (file-name-directory executable)
-      (executable-find (expand-file-name executable))))))
-  :custom (flycheck-executable-find 'custom-flycheck-executable-find)
   :after flyspell
   :bind (:map flyspell-mode-map ("C-;" . flyspell-correct-wrapper)))
 
