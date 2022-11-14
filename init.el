@@ -393,15 +393,7 @@ path and tries invoking `executable-find' again."
   (while (search-forward "),(" nil t)
     (replace-match "),\n(" nil t))
   ))
-(defun my-org-capture-notes-file (buffer)
-  "Returns the name of the file to write notes to when org-capture is invoked"
-  (setq in-uni (string-match "/uni/" buffer))
-  (if in-uni (expand-file-name "notes.org" (string-join (seq-subseq (split-string buffer "/") 0 6) "/"))
-    (expand-file-name "~/org/notes.org")))
-(defun my-org-capture-notes-file-from-buffer (&rest args)
-  (setq org-default-notes-file (my-org-capture-notes-file buffer-file-name)))
-
-(advice-add 'org-capture :before 'my-org-capture-notes-file-from-buffer)
+(setq org-default-notes-file "~/org/notes.org")
 
 (setq org-plantuml-executable-path (expand-file-name "/usr/local/bin/plantuml"))
 (setq org-plantuml-exec-mode 'plantuml)
