@@ -242,6 +242,7 @@ path and tries invoking `executable-find' again."
 (setq org-agenda-include-diary t)
 ;; Capture notes
 (setq org-directory "~/org/")
+(setq org-default-notes-file "~/org/notes.org")
 
 (setq org-capture-templates
       '(("t" "Todo" entry (file+headline "" "Tasks")
@@ -393,7 +394,6 @@ path and tries invoking `executable-find' again."
   (while (search-forward "),(" nil t)
     (replace-match "),\n(" nil t))
   ))
-(setq org-default-notes-file "~/org/notes.org")
 
 (setq org-plantuml-executable-path (expand-file-name "/usr/local/bin/plantuml"))
 (setq org-plantuml-exec-mode 'plantuml)
