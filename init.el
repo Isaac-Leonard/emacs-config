@@ -1250,6 +1250,14 @@ Returns a pair of the form (key-type . key)."
 (setq projectile-use-git-grep t)
 (use-package ess)
 (use-package polymode)
-(use-package poly-R)
+(use-package poly-R
+  :config
+  (add-to-list 'auto-mode-alist
+               '("\\.[rR]md\\'" . poly-gfm+r-mode))
+  :custom (markdown-code-block-braces t))
+
 
 (advice-add 'ess-eval-region-or-function-or-paragraph-and-step :after (lambda (&optional v w)(switch-to-buffer "*R*")))
+
+;; Stop numbers moving to the right in org tables
+(setq org-table-number-fraction 1.1)
