@@ -218,45 +218,26 @@ path and tries invoking `executable-find' again."
   :hook (elisp-mode . elisp-slime-nav-mode)
   )
 
-;; RSS feeds
-(use-package elfeed
-  :custom (elfeed-search-title-max-width 280)
-  (elfeed-search-title-min-width 280)
-  :config (global-set-key (kbd "C-x w") 'elfeed))
-(use-package elfeed-org
-  :config (elfeed-org)
-  :custom (rmh-elfeed-org-files (list "~/.emacs.d/elfeed.org")))
-
-(defun elfeed-search-print-entry--custom (entry)
-  "Print ENTRY to the buffer."
-  (let* ((date (elfeed-search-format-date (elfeed-entry-date entry)))
-         (title (or (elfeed-meta entry :title) (elfeed-entry-title entry) ""))
-         (title-faces (elfeed-search--faces (elfeed-entry-tags entry)))
-         (feed (elfeed-entry-feed entry))
-         (feed-title
-          (when feed
-            (or (elfeed-meta feed :title) (elfeed-feed-title feed))))
-         (tags (mapcar #'symbol-name (elfeed-entry-tags entry)))
-         (tags-str (mapconcat
-                    (lambda (s) (propertize s 'face 'elfeed-search-tag-face))
-                    tags ","))
-         (title-width (- (window-width) 10 elfeed-search-trailing-width))
-         (title-column (elfeed-format-column
-                        title (elfeed-clamp
-                               elfeed-search-title-min-width
-                               title-width
-                               elfeed-search-title-max-width)
-                        :left)))
-    (insert (propertize title-column 'face title-faces 'kbd-help title) " ")
-    (when feed-title
-      (insert (propertize feed-title 'face 'elfeed-search-feed-face) " "))
-    (when tags
-      (insert "(" tags-str ")"))
-    (insert (propertize date 'face 'elfeed-search-date-face) " ")))
-(setq elfeed-search-print-entry-function 'elfeed-search-print-entry--custom)
-
 ;; Org- setup
 (use-package org)
+(setq org-startup-folded t)
+
+;; Hide every properties drawer
+(defun org-hide-all-properties ()
+  "Hides all the property drawers in the current file"
+  (interactive)
+  (save-excursion
+    (beginning-of-buffer)
+    (while (search-forward ":PROPERTIES:"  nil t) (org-hide-drawer-toggle))
+    )
+  )
+
+;; Variables
+(setq org-agenda-files "~/org/agenda-files.txt")
+(setq org-agenda-span 7)
+(setq org-agenda-custom-commands '(
+				   ("m" "Overview" ((agenda "") (alltodo ""))
+				    )))
 ;; Include holidays and stuff in org-agender
 (setq org-agenda-include-diary t)
 ;; Capture notes
@@ -302,6 +283,172 @@ path and tries invoking `executable-find' again."
 (add-hook 'text-mode-hook 'flyspell-mode)
 ;; Useful for correcting spelling in comments in code
 (add-hook 'prog-mode-hook 'flyspell-mode)
+(use-package org-ref)
+(use-package org-journal
+  :bind
+  ("C-c n j" . org-journal-new-entry)
+  :custom
+  (org-journal-date-prefix "#+title: ")
+  (org-journal-file-format "%Y-%m-%d.org")
+  (org-journal-dir "~/org/journal/")
+  (org-journal-date-format "%A, %d %B %Y"))
+
+(use-package deft
+  :after org
+  :bind
+  ("C-c n d" . deft)
+  :custom
+  (deft-recursive t)
+  (deft-use-filter-string-for-filename t)
+  (deft-default-extension "org")
+  (deft-directory "~/org-roam/"))
+
+;; Tables of contents in org files
+(defun org-make-table-of-contents ()
+  "Makes a table of contents at the start of the buffer"
+  (interactive)
+  (let (base-indent))
+  (setq  base-indent (current-indentation))
+  (save-excursion
+    (if (search-forward ":contents:" nil t)
+	(progn
+	  (search-forward ":end:" nil t)
+	  (end-of-line)
+	  (setq end-contents-position (point))
+	  (search-backward ":contents:" nil t)
+	  (beginning-of-line)
+	  (kill-forward-chars (- end-contents-position (point)))
+	  )
+      (beginning-of-buffer))
+    (setq links (org-map-entries (lambda ()
+		       (list (org-store-link nil) (nth 0 (org-heading-components)))
+		       ) nil nil))
+    (insert ":contents:")
+    (insert "\n")
+    (message "before loop")
+    (cl-loop for link in links do
+	     (progn
+	       (dotimes (_ (+ base-indent (* 2 (nth 1 link)))) (insert " "))
+	       (message "indent added")
+	       (insert "- ")
+	       (insert (nth 0 link))
+	       (insert "\n")
+	       )
+	     )
+    (insert ":end:\n")
+    ))
+
+
+(defun org-replace-link-by-link-description ()
+    "Replace an org link by its description or if empty its address"
+  (interactive)
+  (if (org-in-regexp org-link-bracket-re 1)
+      (save-excursion
+        (let ((remove (list (match-beginning 0) (match-end 0)))
+              (description
+               (if (match-end 2) 
+                   (org-match-string-no-properties 2)
+                 (org-match-string-no-properties 1))))
+          (apply 'delete-region remove)
+          (insert description)))))
+
+(defun org-replace-all-links-by-their-description ()
+  "Replaces every org link in the buffer by its description"
+  (interactive)
+  (save-excursion
+    (beginning-of-buffer)
+    (while (search-forward "[[" nil t)
+      (org-replace-link-by-link-description))))
+;; Improve latex editing in org mode
+(add-hook 'org-mode-hook 'turn-on-org-cdlatex)
+;; Clean up lectures and notes
+;; Can be used for other lectures too
+(defun org-clean-lecture ()
+  "Removes unneeded stuff from lectures"
+  (interactive)
+  (save-excursion
+    (convert-to-one-sentence-per-line)
+  (beginning-of-buffer)
+  (while (search-forward "\n\n" nil t)
+    (replace-match "\n" nil t))
+  (beginning-of-buffer)
+  (while (search-forward "#+begin_center\n" nil t)
+    (replace-match "" nil t))
+  (beginning-of-buffer)
+  (while (search-forward "#+end_center\n" nil t)
+    (replace-match "" nil t))
+  (beginning-of-buffer)
+  (while (search-forward "#+begin_example\n#+end_example\n" nil t)
+    (replace-match "" nil t))
+  (beginning-of-buffer)
+  (while (search-forward "\\(" nil t)
+    (replace-match "$" nil t))
+  (beginning-of-buffer)
+  (while (search-forward "\\)" nil t)
+    (replace-match "$" nil t))
+  (beginning-of-buffer)
+  (while (search-forward "$ $" nil t)
+    (replace-match "$\n$" nil t))
+    (beginning-of-buffer)
+  (while (search-forward "),(" nil t)
+    (replace-match "),\n(" nil t))
+  ))
+(defun my-org-capture-notes-file (buffer)
+  "Returns the name of the file to write notes to when org-capture is invoked"
+  (setq in-uni (string-match "/uni/" buffer))
+  (if in-uni (expand-file-name "notes.org" (string-join (seq-subseq (split-string buffer "/") 0 6) "/"))
+    (expand-file-name "~/org/notes.org")))
+(defun my-org-capture-notes-file-from-buffer (&rest args)
+  (setq org-default-notes-file (my-org-capture-notes-file buffer-file-name)))
+
+(advice-add 'org-capture :before 'my-org-capture-notes-file-from-buffer)
+
+(setq org-plantuml-executable-path (expand-file-name "/usr/local/bin/plantuml"))
+(setq org-plantuml-exec-mode 'plantuml)
+(add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
+(require 'ob-sql)
+(org-babel-do-load-languages 'org-babel-load-languages '(
+  (plantuml . t)
+  (sql t)))
+(setq org-odt-preferred-output-format "docx")
+
+;; RSS feeds
+(use-package elfeed
+  :custom (elfeed-search-title-max-width 280)
+  (elfeed-search-title-min-width 280)
+  :config (global-set-key (kbd "C-x w") 'elfeed))
+(use-package elfeed-org
+  :config (elfeed-org)
+  :custom (rmh-elfeed-org-files (list "~/.emacs.d/elfeed.org")))
+
+(defun elfeed-search-print-entry--custom (entry)
+  "Print ENTRY to the buffer."
+  (let* ((date (elfeed-search-format-date (elfeed-entry-date entry)))
+         (title (or (elfeed-meta entry :title) (elfeed-entry-title entry) ""))
+         (title-faces (elfeed-search--faces (elfeed-entry-tags entry)))
+         (feed (elfeed-entry-feed entry))
+         (feed-title
+          (when feed
+            (or (elfeed-meta feed :title) (elfeed-feed-title feed))))
+         (tags (mapcar #'symbol-name (elfeed-entry-tags entry)))
+         (tags-str (mapconcat
+                    (lambda (s) (propertize s 'face 'elfeed-search-tag-face))
+                    tags ","))
+         (title-width (- (window-width) 10 elfeed-search-trailing-width))
+         (title-column (elfeed-format-column
+                        title (elfeed-clamp
+                               elfeed-search-title-min-width
+                               title-width
+                               elfeed-search-title-max-width)
+                        :left)))
+    (insert (propertize title-column 'face title-faces 'kbd-help title) " ")
+    (when feed-title
+      (insert (propertize feed-title 'face 'elfeed-search-feed-face) " "))
+    (when tags
+      (insert "(" tags-str ")"))
+    (insert (propertize date 'face 'elfeed-search-date-face) " ")))
+(setq elfeed-search-print-entry-function 'elfeed-search-print-entry--custom)
+
 ;; Sorts suggestions in order of most used
 (use-package company-prescient
   :hook
@@ -321,27 +468,8 @@ path and tries invoking `executable-find' again."
 (use-package define-word)
 (use-package synonyms)
 (setq synonyms-file "~/mthesaur.txt")
-(use-package org-ref)
 
 
-(use-package org-journal
-  :bind
-  ("C-c n j" . org-journal-new-entry)
-  :custom
-  (org-journal-date-prefix "#+title: ")
-  (org-journal-file-format "%Y-%m-%d.org")
-  (org-journal-dir "~/org/journal/")
-  (org-journal-date-format "%A, %d %B %Y"))
-
-(use-package deft
-  :after org
-  :bind
-  ("C-c n d" . deft)
-  :custom
-  (deft-recursive t)
-  (deft-use-filter-string-for-filename t)
-  (deft-default-extension "org")
-  (deft-directory "~/org-roam/"))
 
 ;; My own custom functions
 (defun jump-to-end-of-buffer ()
@@ -442,12 +570,6 @@ path and tries invoking `executable-find' again."
                 (cpm--getcal url file)
                 ))
           calendars))
-
-(setq org-agenda-files "~/org/agenda-files.txt")
-(setq org-agenda-span 7)
-(setq org-agenda-custom-commands '(
-				   ("m" "Overview" ((agenda "") (alltodo ""))
-				    )))
 ;; (use-package md4rd
 ;;   :config
 ;;   (add-hook 'md4rd-mode-hook 'md4rd-indent-all-the-lines)
@@ -516,109 +638,6 @@ path and tries invoking `executable-find' again."
       ))
   )
 
-;; Clean up lectures and notes
-;; Can be used for other lectures too
-(defun org-clean-lecture ()
-  "Removes unneeded stuff from lectures"
-  (interactive)
-  (save-excursion
-    (convert-to-one-sentence-per-line)
-  (beginning-of-buffer)
-  (while (search-forward "\n\n" nil t)
-    (replace-match "\n" nil t))
-  (beginning-of-buffer)
-  (while (search-forward "#+begin_center\n" nil t)
-    (replace-match "" nil t))
-  (beginning-of-buffer)
-  (while (search-forward "#+end_center\n" nil t)
-    (replace-match "" nil t))
-  (beginning-of-buffer)
-  (while (search-forward "#+begin_example\n#+end_example\n" nil t)
-    (replace-match "" nil t))
-  (beginning-of-buffer)
-  (while (search-forward "\\(" nil t)
-    (replace-match "$" nil t))
-  (beginning-of-buffer)
-  (while (search-forward "\\)" nil t)
-    (replace-match "$" nil t))
-  (beginning-of-buffer)
-  (while (search-forward "$ $" nil t)
-    (replace-match "$\n$" nil t))
-    (beginning-of-buffer)
-  (while (search-forward "),(" nil t)
-    (replace-match "),\n(" nil t))
-  ))
-
-(setq org-startup-folded t)
-
-;; Hide every properties drawer
-(defun org-hide-all-properties ()
-  "Hides all the property drawers in the current file"
-  (interactive)
-  (save-excursion
-    (beginning-of-buffer)
-    (while (search-forward ":PROPERTIES:"  nil t) (org-hide-drawer-toggle))
-    )
-  )
-
-;; Tables of contents in org files
-(defun org-make-table-of-contents ()
-  "Makes a table of contents at the start of the buffer"
-  (interactive)
-  (let (base-indent))
-  (setq  base-indent (current-indentation))
-  (save-excursion
-    (if (search-forward ":contents:" nil t)
-	(progn
-	  (search-forward ":end:" nil t)
-	  (end-of-line)
-	  (setq end-contents-position (point))
-	  (search-backward ":contents:" nil t)
-	  (beginning-of-line)
-	  (kill-forward-chars (- end-contents-position (point)))
-	  )
-      (beginning-of-buffer))
-    (setq links (org-map-entries (lambda ()
-		       (list (org-store-link nil) (nth 0 (org-heading-components)))
-		       ) nil nil))
-    (insert ":contents:")
-    (insert "\n")
-    (message "before loop")
-    (cl-loop for link in links do
-	     (progn
-	       (dotimes (_ (+ base-indent (* 2 (nth 1 link)))) (insert " "))
-	       (message "indent added")
-	       (insert "- ")
-	       (insert (nth 0 link))
-	       (insert "\n")
-	       )
-	     )
-    (insert ":end:\n")
-    ))
-
-
-(defun org-replace-link-by-link-description ()
-    "Replace an org link by its description or if empty its address"
-  (interactive)
-  (if (org-in-regexp org-link-bracket-re 1)
-      (save-excursion
-        (let ((remove (list (match-beginning 0) (match-end 0)))
-              (description
-               (if (match-end 2) 
-                   (org-match-string-no-properties 2)
-                 (org-match-string-no-properties 1))))
-          (apply 'delete-region remove)
-          (insert description)))))
-
-(defun org-replace-all-links-by-their-description ()
-  "Replaces every org link in the buffer by its description"
-  (interactive)
-  (save-excursion
-    (beginning-of-buffer)
-    (while (search-forward "[[" nil t)
-      (org-replace-link-by-link-description))))
-;; Improve latex editing in org mode
-(add-hook 'org-mode-hook 'turn-on-org-cdlatex)
 
 ;; Spotify setup
 ;; Settings
@@ -764,24 +783,6 @@ path and tries invoking `executable-find' again."
 (use-package play-sound
   :straight (play-sound :type git :host github :repo "leoliu/play-sound-osx"))
 
-(defun my-org-capture-notes-file (buffer)
-  "Returns the name of the file to write notes to when org-capture is invoked"
-  (setq in-uni (string-match "/uni/" buffer))
-  (if in-uni (expand-file-name "notes.org" (string-join (seq-subseq (split-string buffer "/") 0 6) "/"))
-    (expand-file-name "~/org/notes.org")))
-(defun my-org-capture-notes-file-from-buffer (&rest args)
-  (setq org-default-notes-file (my-org-capture-notes-file buffer-file-name)))
-
-(advice-add 'org-capture :before 'my-org-capture-notes-file-from-buffer)
-
-(setq org-plantuml-executable-path (expand-file-name "/usr/local/bin/plantuml"))
-(setq org-plantuml-exec-mode 'plantuml)
-(add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
-(require 'ob-sql)
-(org-babel-do-load-languages 'org-babel-load-languages '(
-  (plantuml . t)
-  (sql t)))
-(setq org-odt-preferred-output-format "docx")
 
 (use-package pdf-tools
   :config (pdf-tools-install))
