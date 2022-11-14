@@ -331,7 +331,7 @@ path and tries invoking `executable-find' again."
   :custom
   (org-journal-date-prefix "#+title: ")
   (org-journal-file-format "%Y-%m-%d.org")
-  (org-journal-dir "/path/to/journal/files/")
+  (org-journal-dir "~/org/journal/")
   (org-journal-date-format "%A, %d %B %Y"))
 
 (use-package deft
