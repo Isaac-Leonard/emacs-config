@@ -252,7 +252,37 @@ path and tries invoking `executable-find' again."
         ("j" "Journal" entry (file+datetree "~/org/diary.org")
          "* %?\nEntered on %U\n  %i\n  %a" :kill-buffer)
 	("P" "process-soon" entry (file+headline "~/org/notes.org" "Emails")
-	 "* TODO %:fromname: %a \nDEADLINE: %(org-insert-time-stamp (org-read-date nil t \"+2d\"))")))
+	 "** TODO %:fromname: %a \nDEADLINE: %(org-insert-time-stamp (org-read-date nil t \"+5d\"))")))
+(use-package org-roam
+  :custom (org-roam-directory (file-truename "~/org-roam/"))
+  (org-roam-v2-ack t)
+  (org-roam-db-location "/Users/isaac/.emacs.d/org-roam.db")
+  (org-roam-capture-templates '(("d" "default" plain "%?"
+				 :target (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
+				 :unnarrowed t)))
+  (org-roam-dailies-directory "dailies/")
+  (org-roam-dailies-capture-templates
+   '(("d" "default" entry
+      "* %?"
+      :target (file+head "%<%Y-%m-%d>.org"
+                         "#+title: %<%Y-%m-%d>\n"))))
+  :config (org-roam-db-autosync-mode)
+  (defun org-roam-make-note-of-interest ()
+    "Prompts the user for information and stores it in a list of things to review later"
+    (interactive)
+    (write-region (format "* %s\n%s\n%s\n" (read-string "Title: ") (read-string "Description: ") (read-string "Source: ")) nil "~/org-roam/links.org" t))
+  :ensure t
+  :bind (("C-o" . nil) ;; Got to remove default open-line that I never use
+	 ("C-o r f" . org-roam-node-find)
+         ("C-o r r" . org-roam-node-random)		    
+	 ("C-o r c" . org-roam-capture)
+	 ("C-o r n" . org-roam-make-note-of-interest)
+         (:map org-mode-map
+               (("C-o r i" . org-roam-node-insert)
+                ("C-o r o" . org-id-get-create)
+                ("C-o r t" . org-roam-tag-add)
+                ("C-o r a" . org-roam-alias-add)
+                ("C-o r l" . org-roam-buffer-toggle)))))
 
 ;; ORG-EXPORT TIMESTAMPS
 ;; From https://www.reddit.com/r/emacs/comments/fgcw2b/org_change_date_format_only_on_export/
@@ -302,8 +332,7 @@ path and tries invoking `executable-find' again."
   (deft-recursive t)
   (deft-use-filter-string-for-filename t)
   (deft-default-extension "org")
-  (deft-directory "~/org-roam/"))
-
+  (deft-directory org-roam-directory))
 ;; Tables of contents in org files
 (defun org-make-table-of-contents ()
   "Makes a table of contents at the start of the buffer"
@@ -1098,6 +1127,7 @@ interactive `pyvenv-workon' function before `lsp'"
 
 (setq lsp-sqls-connections '(((driver . "postgresql")
 			      (dataSourceName b. "host=127.0.0.1 port=5432 user=docker password=password dbname=docker"))))
+
 
 (defun my-sql-hook ()
   (add-to-list 'flycheck-disabled-checkers 'lsp)
