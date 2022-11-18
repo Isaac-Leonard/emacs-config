@@ -266,11 +266,21 @@ path and tries invoking `executable-find' again."
       "* %?"
       :target (file+head "%<%Y-%m-%d>.org"
                          "#+title: %<%Y-%m-%d>\n"))))
+  (org-roam-node-display-template
+   (concat "${type:15} ${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
   :config (org-roam-db-autosync-mode)
   (defun org-roam-make-note-of-interest ()
     "Prompts the user for information and stores it in a list of things to review later"
     (interactive)
     (write-region (format "* %s\n%s\n%s\n" (read-string "Title: ") (read-string "Description: ") (read-string "Source: ")) nil "~/org-roam/links.org" t))
+  (cl-defmethod org-roam-node-type ((node org-roam-node))
+    "Return the TYPE of NODE."
+    (condition-case nil
+	(file-name-nondirectory
+	 (directory-file-name
+          (file-name-directory
+           (file-relative-name (org-roam-node-file node) org-roam-directory))))
+      (error "")))
   :ensure t
   :bind (("C-o" . nil) ;; Got to remove default open-line that I never use
 	 ("C-o r f" . org-roam-node-find)
