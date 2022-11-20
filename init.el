@@ -257,8 +257,11 @@ path and tries invoking `executable-find' again."
   :custom (org-roam-directory (file-truename "~/org-roam/"))
   (org-roam-v2-ack t)
   (org-roam-db-location "/Users/isaac/.emacs.d/org-roam.db")
-  (org-roam-capture-templates '(("d" "default" plain "%?"
-				 :target (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
+  (org-roam-capture-templates '(("m" "main" plain "%?"
+				 :target (file+head "main/%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
+				 :unnarrowed t)
+				("r" "reference" plain "%?"
+				 :target (file+head "reference/%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
 				 :unnarrowed t)))
   (org-roam-dailies-directory "dailies/")
   (org-roam-dailies-capture-templates
