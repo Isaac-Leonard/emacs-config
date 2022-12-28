@@ -1296,3 +1296,13 @@ Returns a pair of the form (key-type . key)."
 
 ;; Stop numbers moving to the right in org tables
 (setq org-table-number-fraction 1.1)
+
+;; Chat GPT set up
+(use-package chatgpt
+  :straight (:host github :repo "joshcho/ChatGPT.el" :files ("dist" "*.el"))
+  :init
+  (require 'python)
+  (setq chatgpt-repo-path "~/.emacs.d/straight/repos/ChatGPT.el/")
+  (setq python-interpreter "python3")
+  :bind ("C-c q" . chatgpt-query))
+(python-interpreter "python3")
