@@ -1148,13 +1148,6 @@ interactive `pyvenv-workon' function before `lsp'"
   (lsp))
 (add-hook 'sql-mode-hook #'my-sql-hook)
 
-(defun custom-time-stamp ()
-  (format-time-string (concat "[" (substring (car org-time-stamp-formats) 1 -1) "]") (current-time)))
-
-(defun org-timestamp-in-buffer ()
-  (save-excursion (goto-char (point-min))
-		  (search-forward (custom-time-stamp) nil t)))
-
 (setq org-duration-format (quote h:mm))
 
 ;; Automating work
@@ -1163,10 +1156,9 @@ interactive `pyvenv-workon' function before `lsp'"
   (interactive)
   (find-file "~/work/hours.org")
   (goto-char (point-max))
-  (when (not (org-timestamp-in-buffer))
-    (insert "* ")
-    (insert (custom-time-stamp))
-    (insert "\n"))
+  (insert "* ")
+  (org-insert-time-stamp (current-time) nil t)
+  (insert "\n")
   (org-clock-in)
   (save-buffer))
 
