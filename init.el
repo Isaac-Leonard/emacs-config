@@ -748,23 +748,14 @@ path and tries invoking `executable-find' again."
               ("C-c C-c Q" . lsp-workspace-shutdown)
               ("C-c C-c s" . lsp-rust-analyzer-status))
   :config
-    ;; (setq lsp-enable-symbol-highlighting nil)
+  ;; (setq lsp-enable-symbol-highlighting nil)
   ;; (setq lsp-signature-auto-activate nil)
   (advice-add 'rustic-cargo-run :after (lambda (&optional v w)(switch-to-buffer "*cargo-run*")))
-  ;; comment to disable rustfmt on save
-  (setq rustic-format-on-save t)
-  (add-hook 'rustic-mode-hook 'rk/rustic-mode-hook)
-  (defun rk/rustic-mode-hook ()
-    ;; so that run C-c C-c C-r works without having to confirm, but don't try to
-    ;; save rust buffers that are not file visiting. Once
-    ;; https://github.com/brotzeit/rustic/issues/253 has been resolved this should
-    ;; (not )o longer be necessary.
-    (when buffer-file-name
-      (setq-local buffer-save-without-query t))
-    ;; Gets set to nil somewhere for some reason so set it back
-    (setq flycheck-display-errors-function 'flycheck-display-error-messages)
-    (setq tab-width 4)
-    ))
+  (advice-add 'rustic-cargo-check :after (lambda (&optional v w)(switch-to-buffer "*rustic-compilation*")))
+  (advice-add 'rustic-cargo-clippy :after (lambda (&optional v w)(switch-to-buffer "*cargo-clippy*")))
+  (add-hook 'rustic-mode-hook 'flycheck-mode)
+  (add-hook 'rustic-mode-hook #'(lambda() (add-hook 'before-save-hook 'lsp-format-buffer nil t)))
+  (add-hook 'rustic-mode-hook #'(lambda () (setq-local tab-width 4))))
 
 (use-package cdlatex)
 
