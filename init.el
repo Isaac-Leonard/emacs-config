@@ -613,7 +613,7 @@ path and tries invoking `executable-find' again."
   (mapcar #'(lambda (x)
               (let ((file (concat diary-location (car x)))
                     (url (cdr x)))
-                (message (concat "Loading " url " into " file))
+                (message "%s" (format "Loading %s into %s" url file))
                 (find-file file)
                 ;; (flush-lines "^[& ]") ;; if you import ical as non marking
                 (erase-buffer) ;; to avoid duplicating events
