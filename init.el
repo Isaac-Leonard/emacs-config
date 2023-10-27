@@ -782,7 +782,7 @@ path and tries invoking `executable-find' again."
 
 ;; Email
 ;;(use-package mu4e)
-(add-to-list 'load-path (directory-file-name "/usr/local/share/emacs/site-lisp/mu/mu4e"))
+(add-to-list 'load-path (directory-file-name "/opt/homebrew/share/emacs/site-lisp/mu/mu4e"))
 (load-file "~/.config/mu4e/mu4e-config.el")
 ;; Fetch email every 5 minutes
 (setq mu4e-update-interval (* 60 5))
