@@ -943,7 +943,7 @@ path and tries invoking `executable-find' again."
 								  (message "Device '%s' selected" name)))))
 							 (setq devices (cdr devices))
 							 (and device (not (or is-daemon is-active))))))))))))
-			(message "spotify appears to be down")))
+    (message "spotify appears to be down")))
 
 ;; Tries to start the music when we open emacs
 (add-hook 'after-init-hook (lambda ()
@@ -1101,46 +1101,12 @@ beginning or end of a physical line produces an  auditory icon."
   (require 'dap-lldb)
   ;; Temporal fix
   (defun dap-python--pyenv-executable-find (command) (with-venv (executable-find "python"))) )
-(use-package pyvenv
-  :ensure t
-  :init
-  (setenv "WORKON_HOME" "~/.pyenv/versions"))
 (use-package python-mode
   :config
-  (defun dd/py-workon-project-venv ()
-    "Call pyenv-workon with the current projectile project name.
-This will return the full path of the associated virtual
-environment found in $WORKON_HOME, or nil if the environment does
-not exist."
-    (let ((pname (projectile-project-name)))
-      (pyvenv-workon pname)
-      (if (file-directory-p pyvenv-virtual-env)
-          pyvenv-virtual-env
-	(pyvenv-deactivate))))
-  
-  (defun dd/py-auto-lsp ()
-    "Turn on lsp mode in a Python project with some automated logic.
-Try to automatically determine which pyenv virtual environment to
-activate based on the project name, using
-`dd/py-workon-project-venv'. If successful, call `lsp'. If we
-cannot determine the virtualenv automatically, first call the
-interactive `pyvenv-workon' function before `lsp'"
-    (interactive)
-    (if (poetry-find-project-root)
-	(progn(poetry-venv-workon)
-	      (lsp))
-      (let ((pvenv (dd/py-workon-project-venv)))
-	(if pvenv
-            (lsp)
-	  (progn
-            (call-interactively #'pyvenv-workon)
-            (lsp))))))
-  
   (bind-key (kbd "C-c C-a") #'dd/py-auto-lsp python-mode-map))
 
 (use-package lsp-pyright
-  :hook (python-mode . dd/py-auto-lsp))
-(use-package poetry)
+  :hook (python-mode . lsp))
 (use-package py-isort
   :hook ((python-mode . (lambda () (add-hook 'before-save-hook  'py-isort-before-save)))))
 
