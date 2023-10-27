@@ -80,12 +80,19 @@ Image types are symbols like `xbm' or `jpeg'."
   :custom
   (lsp-server-install-dir "~/language-servers")
   (lsp-keymap-prefix "s-l")
-  (lsp-eldoc-render-all nil)
+  (lsp-eldoc-render-all t)
   ;; Rust stuff
   (lsp-rust-analyzer-cargo-watch-command "clippy")
-  (lsp-rust-analyzer-server-display-inlay-hints t)
+  (lsp-inlay-hint-enable t)
   (lsp-rust-analyzer-completion-add-call-argument-snippets nil)
-  (lsp-rust-analyzer-completion-add-call-parenthesis nil))
+  (lsp-rust-analyzer-completion-add-call-parenthesis nil)  (lsp-rust-analyzer-server-display-inlay-hints t)
+  (lsp-rust-analyzer-display-lifetime-elision-hints-enable "skip_trivial")
+  (lsp-rust-analyzer-display-chaining-hints t)
+  (lsp-rust-analyzer-display-lifetime-elision-hints-use-parameter-names nil)
+  (lsp-rust-analyzer-display-closure-return-type-hints t)
+  (lsp-rust-analyzer-display-parameter-hints nil)
+  (lsp-rust-analyzer-display-reborrow-hints nil))
+
 
 ;; LSP support for tex
 ;; Disabled cause its slow and causes crashes
