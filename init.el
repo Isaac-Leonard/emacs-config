@@ -1234,7 +1234,6 @@ Returns a pair of the form (key-type . key)."
   :config (require 'vlf-setup))
 
 
-(load-file (expand-file-name "~/.emacs.d/slack.config.el.gpg"))
 
 
 (define-derived-mode bs-mode prog-mode "borrow script")
@@ -1262,12 +1261,21 @@ Returns a pair of the form (key-type . key)."
 ;; Stop numbers moving to the right in org tables
 (setq org-table-number-fraction 1.1)
 
-;; Chat GPT set up
-(use-package chatgpt
-  :straight (:host github :repo "joshcho/ChatGPT.el" :files ("dist" "*.el"))
-  :init
-  (require 'python)
-  (setq chatgpt-repo-path "~/.emacs.d/straight/repos/ChatGPT.el/")
-  (setq python-interpreter "python3")
-  :bind ("C-c q" . chatgpt-query))
-(python-interpreter "python3")
+
+(use-package flashcards
+  :straight (flashcards :type git :host github :repo "Isaac-Leonard/flashcards.el"))
+
+(defun emacspeak-speak-eldoc-custom (docs interactive)
+  "Speak eldoc."
+  (cl-declare (special eldoc--doc-buffer-docs eldoc--doc-buffer))
+  (when (and eldoc--doc-buffer (buffer-live-p eldoc--doc-buffer))
+    (with-current-buffer eldoc--doc-buffer
+      (unless (equal docs eldoc--doc-buffer-docs)
+        (emacspeak-auditory-icon 'doc))
+      (dtk-speak (buffer-string)) )))
+
+;; (setq eldoc-display-functions '(eldoc-display-in-buffer emacspeak-speak-eldoc-custom ))
+
+;; Shuts up warnings when not connected to internet
+(advice-add 'smudge-controller-player-status :around (lambda (fn) (if (internet-up-p) (func-call fn))) nil)
+
