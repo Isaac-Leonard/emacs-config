@@ -3,14 +3,23 @@
 ;; Set up emacspeak before everything else so that it runs even if there's an error later on
 (setq dtk-program "mac")
 (load-file "~/emacspeak/lisp/emacspeak-setup.el")
-(setq mac-default-voice-string "[{voice Karen}]")
+(setq mac-default-voice-string "[{voice Karen-premium}]")
 ;; Customising emacspeak
 (global-set-key (kbd "M-c") 'emacspeak-speak-current-column)
 (dtk-set-rate 720 t)
 (setq emacspeak-auditory-icon-function 'emacspeak-serve-auditory-icon)
 (setq emacspeak-pronounce-dictionaries-file (expand-file-name "~/.emacs.d/pronounciations.el"))
-;; Set correct environment variables
-;;(require 'exec-path-from-shell)
+
+;; Needed to fix bugs
+(add-to-list 'image-types 'svg)
+;; overriding image.el function image-type-available-p
+(defun image-type-available-p (type)
+  "Return t if image type TYPE is available.
+Image types are symbols like `xbm' or `jpeg'."
+  (if (eq 'svg type)
+      nil
+    (and (fboundp 'init-image-library)
+         (init-image-library type))))
 
 ;; Make the startup cleaner
 (tool-bar-mode -1)
