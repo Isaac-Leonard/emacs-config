@@ -641,7 +641,7 @@ path and tries invoking `executable-find' again."
   ;; Customising emacspeak
   (global-set-key (kbd "M-c") 'emacspeak-speak-current-column)
   (dtk-set-rate 720 t)
-(setq mac-default-voice-string "[{voice Karen}]"))
+  (setq mac-default-voice-string "[{voice Karen-premium}]"))
 
 ;; Uml
 (defun setup-plantuml-mode ()
