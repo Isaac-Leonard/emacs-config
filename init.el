@@ -647,6 +647,7 @@ path and tries invoking `executable-find' again."
 (defun setup-plantuml-mode ()
   (local-set-key (kbd "M-.") 'plantuml-find-entity)
   (emacspeak-toggle-audio-indentation))
+
 (use-package plantuml-mode
   :hook (plantuml-mode . setup-plantuml-mode))
 
@@ -689,16 +690,16 @@ path and tries invoking `executable-find' again."
   )
 
 
-;; Spotify setup
-;; Settings
-(setq auth-sources '(password-store))
+;; Security settings
+(setq auth-sources '(password-store "~/.emacs.d/auth-info.gpg"))
 (setq epg-pinentry-mode 'loopback)
-(setq mu4e-get-mail-command (format "INSIDE_EMACS=%s mbsync -a" emacs-version))
+
 (use-package pinentry
   :config (pinentry-start))
 
+(setq mu4e-get-mail-command (format "INSIDE_EMACS=%s mbsync -a" emacs-version))
+
 (load-file "~/.emacs.d/smudge-config.el.gpg")
-(setq smudge-transport 'connect)
 (use-package smudge
   :straight (smudge :type git :host github :repo "Isaac-Leonard/smudge"))
 (define-key smudge-mode-map (kbd "C-c .") 'smudge-command-map)
@@ -1277,5 +1278,13 @@ Returns a pair of the form (key-type . key)."
 ;; (setq eldoc-display-functions '(eldoc-display-in-buffer emacspeak-speak-eldoc-custom ))
 
 ;; Shuts up warnings when not connected to internet
-(advice-add 'smudge-controller-player-status :around (lambda (fn) (if (internet-up-p) (func-call fn))) nil)
+(advice-add 'smudge-controller-player-status :around (lambda (fn) (if (internet-up-p) (funcall fn))) nil)
 
+(use-package forge
+  :after magit)
+
+(use-package code-review
+  :straight (code-review :type git :host github :repo "phelrine/code-review" :branch "fix/closql-update")
+  :custom (code-review-auth-login-marker 'code-review))
+
+(use-package crdt)
