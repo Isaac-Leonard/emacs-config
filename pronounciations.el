@@ -1,7 +1,6 @@
 (emacspeak-pronounce-set-dictionary 'text-mode
- '((" -[0-9]+\\.?[0-9]+%?" re-search-forward . #[257 "\300\301\302\"P\207" [" minus " substring 2] 5 "
-
-(fn NUMBER)"])))
+				    '((" -[0-9]+\\.?[0-9]+%?" re-search-forward . #[257 "\300\301\302\"P\207" [" minus " substring 2] 5 "(fn NUMBER)"])
+				      ("tau " . "tao ")))
 (emacspeak-pronounce-set-dictionary 'comint-mode
  '(("[0-9a-f]\\{8\\}-[0-9a-f]\\{4\\}-[0-9a-f]\\{4\\}-[0-9a-f]\\{4\\}-[0-9a-f]\\{12\\}" re-search-forward . emacspeak-pronounce-uuid) ("[0-9a-f]\\{40\\}" re-search-forward . emacspeak-pronounce-sha-checksum)))
 (emacspeak-pronounce-set-dictionary 'conf-space-mode
@@ -33,7 +32,8 @@
 	    " ")))
 
 (emacspeak-pronounce-set-dictionary 'org-mode
-				    '(("-[A-Z0-9\\]" re-search-forward . (lambda (str) (replace-regexp-in-string "-" " minus" str)))
+				    '(("pardiffdiff{[a-zA-Z_0-9\s\\\\]+}{[a-zA-Z0-9_\s\\\\]+}{[2]+}" re-search-forward . (lambda (str) (concat " partial squared " (s-join " over partial " (split-string (substring str 12 (- (length str) 4)) "}{")) " squared ")))
+				      ("-[A-Z0-9\\]" re-search-forward . (lambda (str) (replace-regexp-in-string "-" " minus " str)))
 				      ("\\equiv" . "\\equivalent")
 				      ("\\nabla\\cdot" . " divergence ")
 				      ("\\nabla\\times" . " curl ")
@@ -41,6 +41,8 @@
 				      ("\\begin{array}" . " start array ")
 				      ("\\end{array}" . " end array ")
 				      ("\\\\[mh]box{[a-zA-Z0-9$_\s]+}" re-search-forward . (lambda (str) (concat " " (substring str 6 -1) " ")))
+				      ("\\iiint" . " triple \\int")
+				      ("\\iint" . " double \\int")
 				      ("\\oint" . " closed \\int")
 				      ("{\\delta}" . " Dirac delta ")
 				      ("\\int_\\([a-zA-Z0-9]\\|\\({[a-zA-Z0-9]_[a-zA-Z0-9]}\\)\\)\\^\\([a-zA-Z0-9]\\|\\({[a-zA-Z0-9]_[a-zA-Z0-9]}\\)\\)" re-search-forward . emacspeak-pronounce-latex-integral)
@@ -51,8 +53,6 @@
 				      ("{\\\\bf\s[a-zA-Z]}" re-search-forward . (lambda (str) (concat " " (substring str 5 6) " ")))
 				      ("{[0-9]+}" re-search-forward . (lambda (str) (concat " " (substring str 1 -1) " ")))
 				      ("{-x}" . " negative x ")
-				      ("\\frac{1}" . " 1over ")
-				      				      ("\\frac{1}" . " 1over ")
 				      ("\\xi" . " ksee ")
 				      ("\\frac{1}{2}" . " 1half ")
 				      ("^3" . " cubed ")
@@ -65,7 +65,13 @@
 				      ("\\ln" . " natural log ")
 				      ("\left" . " left")
 				      ("\\tau" . " towe ")
+				      ("\\frac{d[a-zA-Z_0-9\s\\\\]+}{d[a-zA-Z0-9_\s\\\\]+}" re-search-forward . (lambda (str) (concat " d " (s-join " D " (split-string (substring str 6 (- (length str) 1)) "}{d")) " ")))
+				      ("\\frac{[a-zA-Z_0-9\s\\\\]}{[a-zA-Z0-9_\s\\\\]}" re-search-forward . (lambda (str) (concat " " (s-join " over " (split-string (substring str 5 (- (length str) 1)) "}{")) " ")))
 				      ("\\frac{[a-zA-Z_0-9\s\\\\]+}{[a-zA-Z0-9_\s\\\\]+}" re-search-forward . (lambda (str) (concat " fraction " (substring str 5 (- (length str) 1)) " ")))
+				      ("\\pdiff{[a-zA-Z_0-9\s\\\\]+}{[a-zA-Z0-9_\s\\\\]+}" re-search-forward . (lambda (str) (concat " partial " (s-join " over partial " (split-string (substring str 6 (- (length str) 1)) "}{")) " ")))
+				      ("\\pardiffdiff{[a-zA-Z_0-9\s\\\\]+}{[a-zA-Z0-9_\s\\\\]+}{[2]+}" re-search-forward . (lambda (str) (concat " partial squared " (s-join " over partial " (split-string (substring str 9 (- (length str) 4)) "}{")) " squared ")))
+				      ("\\pardiff{[a-zA-Z_0-9\s\\\\]+}{[a-zA-Z0-9_\s\\\\]+}" re-search-forward . (lambda (str) (concat " partial " (s-join " over partial " (split-string (substring str 8 (- (length str) 1)) "}{")) " ")))
+				      ("\\\\diff{[a-zA-Z_0-9\s\\\\]+}{[a-zA-Z0-9_\s\\\\]+}" re-search-forward . (lambda (str) (concat " d " (s-join " D " (split-string (substring str 6 (- (length str) 1)) "}{")) " ")))
 				      ("\\frac". " fraction ")
 				      ("\\;" . " dot ")
 				      ("\\geq" . " greater than or equal to ")
