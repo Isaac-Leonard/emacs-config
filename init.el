@@ -1086,9 +1086,12 @@ beginning or end of a physical line produces an  auditory icon."
 
   :custom (dashboard-projects-backend 'projectile)
   (dashboard-filter-agenda-entry 'dashboard-no-filter-agenda))
+
 (use-package projectile
   :init
-  (projectile-mode +1))
+  (projectile-mode +1)
+  :config (advice-add 'grep :after (open-buffer "*grep*"))
+  (setq projectile-use-git-grep t))
 
 (use-package python-black
   :hook ((python-mode . python-black-on-save-mode)))
@@ -1248,7 +1251,6 @@ Returns a pair of the form (key-type . key)."
 
 (add-to-list 'lsp-language-id-configuration '(bs-mode . "bscript"))
 
-(setq projectile-use-git-grep t)
 (use-package ess)
 (use-package polymode)
 (use-package poly-R
@@ -1283,4 +1285,3 @@ Returns a pair of the form (key-type . key)."
   "Returns a function that will open the specified buffer when called"
     (lambda (&rest _)(switch-to-buffer buffer-name)))
 
-(advice-add 'grep :after (open-buffer "*grep*"))
