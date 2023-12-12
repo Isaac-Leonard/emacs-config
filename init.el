@@ -139,7 +139,9 @@ Image types are symbols like `xbm' or `jpeg'."
 ;; Inline documentation where possible
 (use-package eldoc
   :hook (lsp-mode . eldoc-mode)
-  )
+  :custom (eldoc-echo-area-use-multiline-p t)
+  :config (advice-add 'eldoc-doc-buffer :after (lambda (&rest _) (switch-to-buffer eldoc--doc-buffer)))
+)
 
 ;; Error checking, never actually noticed what it does though
 (use-package flycheck
@@ -1265,17 +1267,6 @@ Returns a pair of the form (key-type . key)."
 (use-package flashcards
   :straight (flashcards :type git :host github :repo "Isaac-Leonard/flashcards.el"))
 
-(defun emacspeak-speak-eldoc-custom (docs interactive)
-  "Speak eldoc."
-  (cl-declare (special eldoc--doc-buffer-docs eldoc--doc-buffer))
-  (when (and eldoc--doc-buffer (buffer-live-p eldoc--doc-buffer))
-    (with-current-buffer eldoc--doc-buffer
-      (unless (equal docs eldoc--doc-buffer-docs)
-        (emacspeak-auditory-icon 'doc))
-      (dtk-speak (buffer-string)) )))
-
-;; (setq eldoc-display-functions '(eldoc-display-in-buffer emacspeak-speak-eldoc-custom ))
-
 ;; Shuts up warnings when not connected to internet
 (advice-add 'smudge-controller-player-status :around (lambda (fn) (if (internet-up-p) (funcall fn))) nil)
 
@@ -1287,3 +1278,9 @@ Returns a pair of the form (key-type . key)."
   :custom (code-review-auth-login-marker 'code-review))
 
 (use-package crdt)
+
+(defun open-buffer (buffer-name)
+  "Returns a function that will open the specified buffer when called"
+    (lambda (&rest _)(switch-to-buffer buffer-name)))
+
+(advice-add 'grep :after (open-buffer "*grep*"))
