@@ -1,5 +1,5 @@
 ;;; -*- lexical-binding: t; -*-
-;; Makes some of the lambda code work later on, hopefully it doesn't break any old packages
+
 ;; Set up emacspeak before everything else so that it runs even if there's an error later on
 (setq dtk-program "mac")
 (load-file "~/emacspeak/lisp/emacspeak-setup.el")
@@ -11,6 +11,7 @@
 (setq emacspeak-pronounce-dictionaries-file (expand-file-name "~/.emacs.d/pronounciations.el"))
 
 ;; Needed to fix bugs
+;; TODO: Not sure if this is still needed
 (add-to-list 'image-types 'svg)
 ;; overriding image.el function image-type-available-p
 (defun image-type-available-p (type)
@@ -37,14 +38,12 @@ Image types are symbols like `xbm' or `jpeg'."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(emacspeak-play-program "afplay")
+;; '(emacspeak-play-program "afplay")
 )
 
 ;; Sometimes emacs uses the wrong path on Mac
 (when (memq window-system '(mac ns x))
   (exec-path-from-shell-initialize))
-;; Needed for mplayer
-(setq exec-path (append exec-path '("/usr/local/bin")))
 
 ;; Straight package setup, means I can use this config anywhere and packages will be installed automatically on start
 ;; Use "use-package" macro for setting up packages
@@ -63,7 +62,7 @@ Image types are symbols like `xbm' or `jpeg'."
       (eval-print-last-sexp)))
   (load bootstrap-file nil 'nomessage))
 
-;; Download and use "use-package"
+;; Use "use-package" and download if on older versions of emacs
 (straight-use-package 'use-package)
 
 ;; Config and cache files get all tucked away
@@ -109,7 +108,7 @@ Image types are symbols like `xbm' or `jpeg'."
 (require 'reftex)
 (add-hook 'LaTeX-mode-hook 'turn-on-reftex)   ; with AUCTeX LaTeX mode
 
-;; Does something to make java work for lsp, better then eclim
+;; Java
 (use-package lsp-java)
 
 ;; Easy navigation and dumb inserting for general coding
@@ -134,7 +133,7 @@ Image types are symbols like `xbm' or `jpeg'."
   ;; This is just annoying to have enabled
   ;; Disables function parameters being inserted automatically when selecting completion for a function when writing c and c++
   (company-clang-insert-arguments nil)
-  (company-selection-wraparound t)
+  (company-selection-wrap-around t)
   )
 
 ;; Inline documentation where possible
