@@ -805,18 +805,6 @@ path and tries invoking `executable-find' again."
        (define-key mu4e-headers-mode-map (kbd "C-c c") 'mu4e-org-store-and-capture)
        (define-key mu4e-view-mode-map    (kbd "C-c c") 'mu4e-org-store-and-capture)
 
-(add-hook 'mu4e-index-updated-hook
-	  (defun handle-new-emails ()
-	    (play-sound-file "/System/Library/Sounds/Glass.aiff")
-	    (make-process
-	     :name "say-mail"
-	     :command (list "espeak" "Mail")
-	     :sentinel 'ignore)
-	    (make-process
-	     :name "kill-mu"
-	     :command (list "killall" "mu")
-	     :sentinel 'ignore)))
-
 (setq mu4e-hide-index-messages t)
 (setq mu4e-change-filenames-when-moving t)
 (setq mu4e-display-update-status-in-modeline t)
@@ -825,7 +813,6 @@ path and tries invoking `executable-find' again."
 ;; Enable proper sound support on macos
 (use-package play-sound
   :straight (play-sound :type git :host github :repo "leoliu/play-sound-osx"))
-
 
 (use-package pdf-tools
   :config (pdf-tools-install))
