@@ -1,6 +1,7 @@
 ;;; -*- lexical-binding: t; -*-
 
 ;; Set up emacspeak before everything else so that it runs even if there's an error later on
+;; (toggle-debug-on-error)
 (setq dtk-program "mac")
 (load-file "~/emacspeak/lisp/emacspeak-setup.el")
 (setq mac-default-voice-string "[{voice Karen-premium}]")
@@ -128,12 +129,12 @@ Image types are symbols like `xbm' or `jpeg'."
 ;; Auto complete for almost every buffer
 (use-package company
   ;; Start offering suggestions as soon as we start typing
-  :custom (company-minimum-prefix-length 1)
-  (global-company-mode t)
+  :config (setq company-minimum-prefix-length 1)
+  (setq global-company-mode t)
   ;; This is just annoying to have enabled
   ;; Disables function parameters being inserted automatically when selecting completion for a function when writing c and c++
-  (company-clang-insert-arguments nil)
-  (company-selection-wrap-around t)
+  (setq company-clang-insert-arguments nil)
+  (setq company-selection-wrap-around t)
   )
 
 ;; Inline documentation where possible
@@ -935,8 +936,8 @@ path and tries invoking `executable-find' again."
     (message "spotify appears to be down")))
 
 ;; Tries to start the music when we open emacs
-(add-hook 'after-init-hook (lambda ()
-			     (run-spotifyd)))
+;;(add-hook 'after-init-hook (lambda ()
+;;			     (run-spotifyd)))
 
 (defun internet-up-p (&optional host)
   "Checks to see if the internet is working"
@@ -1077,7 +1078,7 @@ beginning or end of a physical line produces an  auditory icon."
 (use-package projectile
   :init
   (projectile-mode +1)
-  :config (advice-add 'grep :after (open-buffer "*grep*"))
+  :config ;; (advice-add 'grep :after (open-buffer "*grep*"))
   (setq projectile-use-git-grep t))
 
 (use-package python-black
