@@ -10,6 +10,7 @@
 (dtk-set-rate 720 t)
 (setq emacspeak-auditory-icon-function 'emacspeak-serve-auditory-icon)
 (setq emacspeak-pronounce-dictionaries-file (expand-file-name "~/.emacs.d/pronounciations.el"))
+(setq emacspeak-play-program "afplay")
 
 ;; Needed to fix bugs
 ;; TODO: Not sure if this is still needed
@@ -129,12 +130,12 @@ Image types are symbols like `xbm' or `jpeg'."
 ;; Auto complete for almost every buffer
 (use-package company
   ;; Start offering suggestions as soon as we start typing
-  :config (setq company-minimum-prefix-length 1)
-  (setq global-company-mode t)
+  :custom (company-minimum-prefix-length 1)
+  (global-company-mode t)
   ;; This is just annoying to have enabled
   ;; Disables function parameters being inserted automatically when selecting completion for a function when writing c and c++
-  (setq company-clang-insert-arguments nil)
-  (setq company-selection-wrap-around t)
+  (company-clang-insert-arguments nil)
+  (company-selection-wrap-around t)
   )
 
 ;; Inline documentation where possible
