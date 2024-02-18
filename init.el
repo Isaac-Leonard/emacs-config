@@ -1274,3 +1274,20 @@ Returns a pair of the form (key-type . key)."
   "Returns a function that will open the specified buffer when called"
     (lambda (&rest _)(switch-to-buffer buffer-name)))
 
+(use-package nodejs-repl
+  :custom (nodejs-repl-command "ts-node"))
+
+(defun say-current-line ()
+  "Calls the say command with the text of the current line
+Intended for debugging when emacspeak is not working correctly"
+  (interactive)
+  (start-process "say" "*Say*" "say" (thing-at-point 'line)))
+
+(use-package vue-mode)
+
+(defun speak-smudge-player-status ()
+  "Update and speak the current spotify status"
+  (interactive)
+  (smudge-controller-player-status)
+  (dtk-speak smudge-controller-player-status))
+(global-set-key (kbd "C-c . c") 'speak-smudge-player-status)
