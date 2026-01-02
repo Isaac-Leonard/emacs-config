@@ -18,9 +18,16 @@
 
 (emacspeak-restart)
 
-;; Needed to fix bugs
+;; Make the startup cleaner
+(tool-bar-mode -1)
+(menu-bar-mode -1)
+(setq inhibit-startup-message t)
+
+;;; Bug fixes and minor QOL adjustm.
+
 ;; TODO: Not sure if this is still needed
 (add-to-list 'image-types 'svg)
+
 ;; overriding image.el function image-type-available-p
 (defun image-type-available-p (type)
   "Return t if image type TYPE is available.
@@ -30,10 +37,7 @@ Image types are symbols like `xbm' or `jpeg'."
     (and (fboundp 'init-image-library)
          (init-image-library type))))
 
-;; Make the startup cleaner
-(tool-bar-mode -1)
-(menu-bar-mode -1)
-(setq inhibit-startup-message t)
+;;; Global configuration
 
 ;;Update buffers when fixxing with linters and version control
 (global-auto-revert-mode)
@@ -41,19 +45,22 @@ Image types are symbols like `xbm' or `jpeg'."
 ;; Don't notify about autosaving
 (setq-default auto-save-no-message t)
 
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(message-fill-column 0)
- '(safe-local-variable-values
-   '((lsp-rust-features . ["heap"]) (lsp-rust-features . ["all"])
-     (lsp-rust-features . listp))))
+;; custom-set-variables was added by Custom.
+;; If you edit it by hand, you could mess it up, so be careful.
+;; Your init file should contain only one such instance.
+;; If there is more than one, they won't work right.
+(custom-set-variables '(message-fill-column 0)
+		      '(safe-local-variable-values
+			'((lsp-rust-features . ["heap"])
+			  (lsp-rust-features . ["all"])
+			  (lsp-rust-features . listp))))
 
-;; Straight package setup, means I can use this config anywhere and packages will be installed automatically on start
-;; Use "use-package" macro for setting up packages
+;;; Straight package setup
+;;; This lets us use this config anywhere and packages will be installed automatically on start.
+
+;; This allows us to use the "use-package" macro for setting up packages
 (setq straight-use-package-by-default t)
+
 ;; Downloads and runs straight.el if its not installed
 (defvar bootstrap-version)
 (let ((bootstrap-file
