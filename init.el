@@ -768,12 +768,14 @@ path and tries invoking `executable-find' again."
   :config
   ;; (setq lsp-enable-symbol-highlighting nil)
   ;; (setq lsp-signature-auto-activate nil)
+  (setq safe-local-variable-values '((lsp-rust-features . listp)))
   (advice-add 'rustic-cargo-run :after (lambda (&optional v w)(switch-to-buffer "*cargo-run*")))
   (advice-add 'rustic-cargo-check :after (lambda (&optional v w)(switch-to-buffer "*rustic-compilation*")))
   (advice-add 'rustic-cargo-clippy :after (lambda (&optional v w)(switch-to-buffer "*cargo-clippy*")))
   (add-hook 'rustic-mode-hook 'flycheck-mode)
   (add-hook 'rustic-mode-hook #'(lambda() (add-hook 'before-save-hook 'lsp-format-buffer nil t)))
-  (add-hook 'rustic-mode-hook #'(lambda () (setq-local tab-width 4))))
+  (add-hook 'rustic-mode-hook #'(lambda () (setq-local tab-width 4)))
+  :custom (rustic-default-test-arguments "--all-features"))
 
 (use-package cdlatex)
 
