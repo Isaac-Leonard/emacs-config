@@ -1549,3 +1549,6 @@ When calling this function from `rustic-popup-mode', always use the value of
   ;; Not sure if this will do the job
   (buffer-name))
 
+(use-package go-mode)
+(setq lsp-go-analyses '((shadow . t)
+                        (simplifycompositelit . :json-false)))
