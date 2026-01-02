@@ -1335,3 +1335,5 @@ Intended for debugging when emacspeak is not working correctly"
 (add-to-list 'eglot-server-programs
 	     `(c++-mode . ("run-lsp.sh")))
 
+(setq print-circle t)
+
