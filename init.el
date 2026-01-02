@@ -1526,3 +1526,5 @@ When calling this function from `rustic-popup-mode', always use the value of
           ())))
   (switch-to-buffer rustic-test-buffer-name))
 
+(setq lsp-ruff-python-path "/opt/homebrew/bin/python3.13")
+
