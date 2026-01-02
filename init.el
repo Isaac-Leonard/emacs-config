@@ -892,12 +892,6 @@ path and tries invoking `executable-find' again."
 
 (use-package pass)
 
-;; Shit goes slow with the defaults for some reason
-;; The original code seems to scroll visually I think so not needed
-(define-key org-agenda-mode-map (kbd "n") #'next-line)
-(define-key org-agenda-mode-map (kbd "C-n") #'next-line)
-(define-key org-agenda-mode-map (kbd "p") #'previous-line)
-(define-key org-agenda-mode-map (kbd "C-p") #'previous-line)
 (mu4e-update-mail-and-index t)
 (add-hook 'after-change-major-mode-hook (lambda () (setq dtk-caps nil)))
 
