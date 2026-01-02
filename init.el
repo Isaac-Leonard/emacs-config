@@ -106,7 +106,14 @@ Image types are symbols like `xbm' or `jpeg'."
 (add-hook 'LaTeX-mode-hook 'turn-on-reftex)   ; with AUCTeX LaTeX mode
 
 ;; Java
-(use-package lsp-java)
+(use-package lsp-java
+  :config (setq lsp-java-jdt-download-url "https://www.eclipse.org/downloads/download.php?file=/jdtls/milestones/1.37.0/jdt-language-server-1.37.0-202406271335.tar.gz")
+  (setq lsp-java-import-gradle-enabled t)
+    (setq lsp-java-configuration-runtimes '[(:name "JavaSE-21"
+                                                 :path "/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home"
+                                                 :default t)])
+    (setq lsp-java-import-gradle-wrapper-enabled t)
+  )
 
 ;; Easy navigation and dumb inserting for general coding
 (defun setup-smartparens ()
