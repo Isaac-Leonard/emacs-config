@@ -12,6 +12,16 @@
 (setq emacspeak-pronounce-dictionaries-file (expand-file-name "~/.emacs.d/pronounciations.el"))
 (setq emacspeak-play-program "afplay")
 
+;; In case it crashes
+(defun restart-emacspeak ()
+  (interactive)
+  (setq dtk-program "swiftmac")
+  (load-file "~/emacspeak/lisp/emacspeak-setup.el")
+  ;; Customising emacspeak
+  (global-set-key (kbd "M-c") 'emacspeak-speak-current-column)
+  (dtk-set-rate 720 t)
+  (setq mac-default-voice-string "[{voice Karen-premium}]"))
+
 ;; Needed to fix bugs
 ;; TODO: Not sure if this is still needed
 (add-to-list 'image-types 'svg)
@@ -638,16 +648,6 @@ path and tries invoking `executable-find' again."
 
 ;; Python jupitor mode
 (use-package ein)
-
-;; In case it crashes
-(defun restart-emacspeak ()
-  (interactive)
-  (setq dtk-program "mac")
-  (load-file "~/emacspeak/lisp/emacspeak-setup.el")
-  ;; Customising emacspeak
-  (global-set-key (kbd "M-c") 'emacspeak-speak-current-column)
-  (dtk-set-rate 720 t)
-  (setq mac-default-voice-string "[{voice Karen-premium}]"))
 
 ;; Uml
 (defun setup-plantuml-mode ()
