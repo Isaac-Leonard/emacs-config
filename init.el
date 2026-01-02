@@ -92,6 +92,10 @@ Image types are symbols like `xbm' or `jpeg'."
 
 ;;; Programming configuration
 
+;; Elisp configuration comes first so we can correct any issues we introduce later in the file more easily.
+(use-package elisp-slime-nav
+  :hook (elisp-mode . elisp-slime-nav-mode))
+
 ;; The following couple of packages are used almost everywhere.
 ;; Most of them are for programming, but some  like `company' have uses for general text processing.
 
@@ -233,11 +237,6 @@ path and tries invoking `executable-find' again."
   :hook (web-mode . (lambda ()
 		      (when (string-equal "tsx" (file-name-extension buffer-file-name))
 			(setup-tide-mode)))))
-
-
-(use-package elisp-slime-nav
-  :hook (elisp-mode . elisp-slime-nav-mode)
-  )
 
 ;; Org- setup
 (use-package org)
