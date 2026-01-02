@@ -78,11 +78,17 @@ Image types are symbols like `xbm' or `jpeg'."
 ;; Use "use-package" and download if on older versions of emacs
 (straight-use-package 'use-package)
 
-;; Config and cache files get all tucked away
+;; This ensures most emacs related configuration and cache files get tucked away in the same place.
 (use-package no-littering)
-;; Hide those nasty backup files
-(setq auto-save-file-name-transforms
-      `((".*" ,(no-littering-expand-var-file-name "auto-save/") t)))
+
+;; Keep backup files in their own location
+(setq backup-directory-alist `(("." . ,(no-littering-expand-var-file-name "backups"))))
+
+;; Hide those nasty autosave files
+(setq auto-save-file-name-transforms `(("." ,(no-littering-expand-var-file-name "auto-save/") t)))
+
+;; Disable Lock files till we work out a better way to create them.
+(setq lock-file-name-transforms `(("." ,(no-littering-expand-var-file-name "lock/") t)))
 
 ;; Set up language server protocol
 (use-package lsp-mode
