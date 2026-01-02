@@ -1241,6 +1241,7 @@ Returns a pair of the form (key-type . key)."
 
 
 (define-derived-mode bs-mode prog-mode "borrow script")
+(require 'lsp-mode)
 (lsp-register-client
  (make-lsp-client
   :new-connection (lsp-stdio-connection '("cargo" "run" "--bin" "lsp"))
