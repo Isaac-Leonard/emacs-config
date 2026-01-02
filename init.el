@@ -93,10 +93,7 @@ Image types are symbols like `xbm' or `jpeg'."
   (lsp-rust-analyzer-display-reborrow-hints nil))
 
 
-;; LSP support for tex
-;; Disabled cause its slow and causes crashes
-;;(add-to-list  'load-path, "/usr/local/bin/texlab")
-(use-package lsp-latex)
+;; LaTeX setup
 (setq-default TeX-master nil)
 (setq TeX-parse-self t)
 (setq TeX-auto-save t)
