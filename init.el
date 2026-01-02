@@ -2,7 +2,7 @@
 
 ;; Set up emacspeak before everything else so that it runs even if there's an error later on
 ;; (toggle-debug-on-error)
-(setq dtk-program "mac")
+(setq dtk-program "swiftmac")
 (load-file "~/emacspeak/lisp/emacspeak-setup.el")
 (setq mac-default-voice-string "[{voice Karen-premium}]")
 ;; Customising emacspeak
