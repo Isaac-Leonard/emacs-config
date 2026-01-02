@@ -1529,3 +1529,14 @@ When calling this function from `rustic-popup-mode', always use the value of
 (setq lsp-ruff-python-path "/opt/homebrew/bin/python3.13")
 
 (setq save-place-limit 100000)
+
+(use-package gptel
+  :config
+  ;; OPTIONAL configuration
+  (setq
+   gptel-model   'test
+   gptel-backend (gptel-make-openai "llama-cpp"
+				    :stream t
+				    :protocol "http"
+				    :host "localhost:8080"
+				    :models '(test))))
