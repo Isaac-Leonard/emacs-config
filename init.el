@@ -202,27 +202,28 @@ path and tries invoking `executable-find' again."
 
 (use-package tide
   :after
-  (typescript-mode company flycheck)
+  (typescript-ts-mode company flycheck)
   (flycheck-add-mode 'typescript-tslint 'web-mode)
   (flycheck-add-mode 'javascript-eslint 'tide-mode)
   :config (advice-add 'tide-references :after (lambda ()(switch-to-buffer "*tide-references*")))  )
 
-(add-hook 'typescript-mode-hook #'setup-tide-mode)
+(add-hook 'typescript-ts-mode-hook #'setup-tide-mode)
 
 ;; Format js and ts code
 (use-package prettier-js
   :hook 
-  (tide-mode . prettier-mode)
-  (web-mode . prettier-mode)
+  (tide-mode . prettier-js-mode)
+  (web-mode . prettier-js-mode)
   )
 
 (use-package web-mode)
-(add-to-list 'auto-mode-alist '("\\.ts\\'" . typescript-mode))
+(add-to-list 'auto-mode-alist '("\\.ts\\'" . typescript-ts-mode))
 (add-to-list 'auto-mode-alist '("\\.tsx\\'" . web-mode))
 (add-hook 'web-mode-hook
 	 (lambda ()
 	   (when (string-equal "tsx" (file-name-extension buffer-file-name))
 	     (setup-tide-mode))))
+
 
 ;; Function to use your node_modules's TSServer to avoid possible collisions with project's Typescript version and Global Typescript version
 (defun tsserver-node-modules ()
