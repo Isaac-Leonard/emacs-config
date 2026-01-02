@@ -40,12 +40,10 @@ Image types are symbols like `xbm' or `jpeg'."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
-;; '(emacspeak-play-program "afplay")
-)
-
-;; Sometimes emacs uses the wrong path on Mac
-(when (memq window-system '(mac ns x))
-  (exec-path-from-shell-initialize))
+ '(message-fill-column 0)
+ '(safe-local-variable-values
+   '((lsp-rust-features . ["heap"]) (lsp-rust-features . ["all"])
+     (lsp-rust-features . listp))))
 
 ;; Straight package setup, means I can use this config anywhere and packages will be installed automatically on start
 ;; Use "use-package" macro for setting up packages
