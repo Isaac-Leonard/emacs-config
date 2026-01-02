@@ -1544,3 +1544,8 @@ When calling this function from `rustic-popup-mode', always use the value of
 
 (load-file "~/.emacs.d/custom-elfeed.el")
 
+(defun pm--visible-buffer-name()
+  "Stand in for missing polymode function"
+  ;; Not sure if this will do the job
+  (buffer-name))
+
