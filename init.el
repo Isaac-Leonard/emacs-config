@@ -1303,3 +1303,35 @@ Intended for debugging when emacspeak is not working correctly"
   (dtk-speak smudge-controller-player-status))
 (keymap-global-set "C-c . c" 'speak-smudge-player-status)
 
+(defun md-to-org-region (start end)
+  "Convert region from markdown to org"
+  (interactive "r")
+  (shell-command-on-region start end "pandoc -f markdown -t org" t t))
+
+(defun convert-5etools-md-to-org (start end)
+  (interactive "r")
+  (let* ((text (buffer-substring-no-properties start end))
+	 (new-text (string-replace "|:---:|:---:|:---:|:---:|:---:|:---:|\n" ""
+				   (string-replace "___\n" ""
+						   (string-replace "#" "*"
+								   (string-replace "##" "***"
+										   (string-replace ">" ""
+												   (string-replace "*" "" text))))))))
+    (delete-region start end)
+    (insert new-text)))
+
+(defun del-binary_characters (beg end)
+  "Delete binary characters in a region"
+  (interactive "r")
+  (save-excursion
+    (save-restriction
+      (narrow-to-region beg end)
+      (goto-char (point-min))
+      (while (re-search-forward "[^[:ascii:]]" nil t)
+        (replace-match "")))))
+
+(setq eglot-server-programs (list))
+
+(add-to-list 'eglot-server-programs
+	     `(c++-mode . ("run-lsp.sh")))
+
