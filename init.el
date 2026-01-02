@@ -2,25 +2,21 @@
 
 ;; Set up emacspeak before everything else so that it runs even if there's an error later on
 ;; (toggle-debug-on-error)
-(setq dtk-program "swiftmac")
-(load-file "~/emacspeak/lisp/emacspeak-setup.el")
-(setq mac-default-voice-string "[{voice Karen-premium}]")
-;; Customising emacspeak
-(global-set-key (kbd "M-c") 'emacspeak-speak-current-column)
-(dtk-set-rate 720 t)
-(setq emacspeak-auditory-icon-function 'emacspeak-serve-auditory-icon)
-(setq emacspeak-pronounce-dictionaries-file (expand-file-name "~/.emacs.d/pronounciations.el"))
-(setq emacspeak-play-program "afplay")
-
 ;; In case it crashes
-(defun restart-emacspeak ()
+(defun emacspeak-restart ()
   (interactive)
   (setq dtk-program "swiftmac")
   (load-file "~/emacspeak/lisp/emacspeak-setup.el")
+  (setq mac-default-voice-string "[{voice Karen-premium}]")
   ;; Customising emacspeak
   (global-set-key (kbd "M-c") 'emacspeak-speak-current-column)
   (dtk-set-rate 720 t)
-  (setq mac-default-voice-string "[{voice Karen-premium}]"))
+  (setq emacspeak-auditory-icon-function 'emacspeak-serve-auditory-icon)
+  (setq emacspeak-pronounce-dictionaries-file (expand-file-name "~/.emacs.d/pronounciations.el"))
+  (setq emacspeak-play-program "afplay")
+  (keymap-global-set "C-e r" 'emacspeak-restart))
+
+(emacspeak-restart)
 
 ;; Needed to fix bugs
 ;; TODO: Not sure if this is still needed
