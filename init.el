@@ -1528,3 +1528,4 @@ When calling this function from `rustic-popup-mode', always use the value of
 
 (setq lsp-ruff-python-path "/opt/homebrew/bin/python3.13")
 
+(setq save-place-limit 100000)
