@@ -479,13 +479,24 @@ path and tries invoking `executable-find' again."
 (setq org-odt-preferred-output-format "docx")
 
 ;; RSS feeds
+(defun my/elfeed-jump-to-article-body (buf &optional NORECORD FORCE-SAME-WINDOW)
+  "Switch to elfeed article buffer and move point to the beginning of the article text in `elfeed-show-mode`."
+  (switch-to-buffer buf NORECORD FORCE-SAME-WINDOW)
+  (when (eq major-mode 'elfeed-show-mode)
+    (goto-char (point-min))
+    ;; Skip past title, tags, and metadata
+    (re-search-forward "\n\n" nil t)))
+
 (use-package elfeed
   :custom (elfeed-search-title-max-width 280)
   (elfeed-search-title-min-width 280)
-  :config (global-set-key (kbd "C-x w") 'elfeed))
+  :config (global-set-key (kbd "C-x w") 'elfeed)
+  :custom (elfeed-show-entry-switch 'my/elfeed-jump-to-article-body))
 (use-package elfeed-org
   :config (elfeed-org)
   :custom (rmh-elfeed-org-files (list "~/.emacs.d/elfeed.org")))
+
+
 
 (defun elfeed-search-print-entry--custom (entry)
   "Print ENTRY to the buffer."
