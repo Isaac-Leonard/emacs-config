@@ -1471,3 +1471,58 @@ Intended for debugging when emacspeak is not working correctly"
     (replace-match "\n" nil t))
   ))
 
+(defun rustic-cargo-insta-nextest-run (&optional test-args)
+  "Start compilation process for 'cargo insta test --test-runner=nextest' with optional TEST-ARGS."
+  (interactive)
+  (rustic-compilation-process-live)
+  (let* ((command (list (rustic-cargo-bin) "insta" "test" "--test-runner=nextest"))
+         (c (append command (split-string (if test-args test-args ""))))
+         (buf rustic-test-buffer-name)
+         (proc rustic-test-process-name)
+         (mode 'rustic-cargo-test-mode))
+    (rustic-compilation c (list :buffer buf :process proc :mode mode))))
+
+(defun rustic-cargo-insta-nextest (&optional arg)
+  "Run 'cargo insta test --test-runner=nextest'.
+
+If ARG is not nil, use value as argument and store it in `rustic-test-arguments'.
+When calling this function from `rustic-popup-mode', always use the value of
+`rustic-test-arguments'."
+  (interactive "P")
+  (rustic-cargo-insta-nextest-run
+   (cond (arg
+          (setq rustic-test-arguments (read-from-minibuffer "Cargo insta test --test-runner=nextest arguments: " rustic-default-test-arguments)))
+         (rustic-cargo-use-last-stored-arguments
+          (if (> (length rustic-test-arguments) 0)
+              rustic-test-arguments
+            rustic-default-test-arguments))
+         (t
+          rustic-default-test-arguments)))
+  (switch-to-buffer rustic-test-buffer-name))
+
+(defun rustic-cargo-nextest-run (&optional test-args)
+  "Start compilation process for 'cargo insta test --test-runner=nextest' with optional TEST-ARGS."
+  (interactive)
+  (rustic-compilation-process-live)
+  (let* ((command (list (rustic-cargo-bin) "nextest" "run"))
+         (c (append command (split-string (if test-args test-args ""))))
+         (buf rustic-test-buffer-name)
+         (proc rustic-test-process-name)
+         (mode 'rustic-cargo-test-mode))
+    (rustic-compilation c (list :buffer buf :process proc :mode mode))))
+
+(defun rustic-cargo-nextest (&optional arg)
+  "Run 'cargo insta test --test-runner=nextest'.
+
+If ARG is not nil, use value as argument and store it in `rustic-test-arguments'.
+When calling this function from `rustic-popup-mode', always use the value of
+`rustic-test-arguments'."
+  (interactive "P")
+  (rustic-cargo-nextest-run
+   (cond (arg
+          (setq rustic-test-arguments (read-from-minibuffer "Cargo nextest arguments: ")))
+         (rustic-cargo-use-last-stored-arguments rustic-test-arguments)
+         (t
+          ())))
+  (switch-to-buffer rustic-test-buffer-name))
+
