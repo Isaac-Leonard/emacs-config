@@ -5,3 +5,7 @@
 /org-roam.db
 /f-shortdoc
 /emacspeak/
+/.cache/
+/%backup%~
+/elfeed.org
+/wordfreq-dicts/
