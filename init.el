@@ -1301,4 +1301,5 @@ Intended for debugging when emacspeak is not working correctly"
   (interactive)
   (smudge-controller-player-status)
   (dtk-speak smudge-controller-player-status))
-(global-set-key (kbd "C-c . c") 'speak-smudge-player-status)
+(keymap-global-set "C-c . c" 'speak-smudge-player-status)
+
