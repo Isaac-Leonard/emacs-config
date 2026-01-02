@@ -1540,3 +1540,7 @@ When calling this function from `rustic-popup-mode', always use the value of
 				    :protocol "http"
 				    :host "localhost:8080"
 				    :models '(test))))
+
+
+(load-file "~/.emacs.d/custom-elfeed.el")
+
