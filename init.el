@@ -90,63 +90,17 @@ Image types are symbols like `xbm' or `jpeg'."
 ;; Disable Lock files till we work out a better way to create them.
 (setq lock-file-name-transforms `(("." ,(no-littering-expand-var-file-name "lock/") t)))
 
-;; Set up language server protocol
-(use-package lsp-mode
-  :commands lsp
-  :hook (python-mode . lsp)
-  (java-mode . lsp)
-  :custom
-  (lsp-server-install-dir "~/language-servers")
-  (lsp-keymap-prefix "s-l")
-  (lsp-eldoc-render-all t)
-  ;; Rust stuff
-  (lsp-rust-analyzer-cargo-watch-command "clippy")
-  (lsp-inlay-hint-enable t)
-  (lsp-rust-analyzer-completion-add-call-argument-snippets nil)
-  (lsp-rust-analyzer-completion-add-call-parenthesis nil)  (lsp-rust-analyzer-server-display-inlay-hints t)
-  (lsp-rust-analyzer-display-lifetime-elision-hints-enable "skip_trivial")
-  (lsp-rust-analyzer-display-chaining-hints t)
-  (lsp-rust-analyzer-display-lifetime-elision-hints-use-parameter-names nil)
-  (lsp-rust-analyzer-display-closure-return-type-hints t)
-  (lsp-rust-analyzer-display-parameter-hints nil)
-  (lsp-rust-analyzer-display-reborrow-hints nil))
+;;; Programming configuration
 
-
-;; LaTeX setup
-(setq-default TeX-master nil)
-(setq TeX-parse-self t)
-(setq TeX-auto-save t)
-(setq Tex-electric-math (cons "$" "$"))
-(use-package tex
-  :straight (auctex :type git :host github :repo "emacs-straight/auctex" :files ("*" (:exclude ".git")))
-  )
-;; For cross references and interfile navigation for tex
-(require 'reftex)
-(add-hook 'LaTeX-mode-hook 'turn-on-reftex)   ; with AUCTeX LaTeX mode
-
-;; Java
-(use-package lsp-java
-  :config (setq lsp-java-jdt-download-url "https://www.eclipse.org/downloads/download.php?file=/jdtls/milestones/1.37.0/jdt-language-server-1.37.0-202406271335.tar.gz")
-  (setq lsp-java-import-gradle-enabled t)
-    (setq lsp-java-configuration-runtimes '[(:name "JavaSE-21"
-                                                 :path "/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home"
-                                                 :default t)])
-    (setq lsp-java-import-gradle-wrapper-enabled t)
-  )
-
-;; Easy navigation and dumb inserting for general coding
-(defun setup-smartparens ()
-  "Adds my own key maps for smart parens"
-  (smartparens-mode)
-  (local-set-key (kbd "C-9") 'sp-beginning-of-sexp)
-  (local-set-key (kbd "C-0") 'sp-end-of-sexp)
-  )
+;; The following couple of packages are used almost everywhere.
+;; Most of them are for programming, but some  like `company' have uses for general text processing.
 
 (use-package smartparens
   :config
   (require 'smartparens-config)
   :hook   (after-change-major-mode . setup-smartparens)
-  )
+  :bind (("C-9" . sp-beginning-of-sexp)
+	 ("C-0" . sp-end-of-sexp)))
 
 ;; Auto complete for almost every buffer
 (use-package company
@@ -163,10 +117,9 @@ Image types are symbols like `xbm' or `jpeg'."
 (use-package eldoc
   :hook (lsp-mode . eldoc-mode)
   :custom (eldoc-echo-area-use-multiline-p t)
-  :config (advice-add 'eldoc-doc-buffer :after (lambda (&rest _) (switch-to-buffer eldoc--doc-buffer)))
-)
+  :config (advice-add 'eldoc-doc-buffer :after (lambda (&rest _) (switch-to-buffer eldoc--doc-buffer))))
 
-;; Error checking, never actually noticed what it does though
+;; Error checking
 (use-package flycheck
   :hook (lsp-mode . flycheck-mode)
   :config (advice-add 'flycheck-verify-setup :after (lambda ()(switch-to-buffer "*Flycheck checkers*")))
@@ -191,6 +144,47 @@ path and tries invoking `executable-find' again."
     (when (file-name-directory executable)
       (executable-find (expand-file-name executable))))))
   :custom (flycheck-executable-find 'custom-flycheck-executable-find))
+
+;; Set up language server protocol
+(use-package lsp-mode
+  :commands lsp
+  :hook (python-mode . lsp)
+  (java-mode . lsp)
+  :custom
+  (lsp-server-install-dir "~/language-servers")
+  (lsp-keymap-prefix "s-l")
+  (lsp-eldoc-render-all t)
+  ;; Rust stuff
+  (lsp-rust-analyzer-cargo-watch-command "clippy")
+  (lsp-inlay-hint-enable t)
+  (lsp-rust-analyzer-completion-add-call-argument-snippets nil)
+  (lsp-rust-analyzer-completion-add-call-parenthesis nil)  (lsp-rust-analyzer-server-display-inlay-hints t)
+  (lsp-rust-analyzer-display-lifetime-elision-hints-enable "skip_trivial")
+  (lsp-rust-analyzer-display-chaining-hints t)
+  (lsp-rust-analyzer-display-lifetime-elision-hints-use-parameter-names nil)
+  (lsp-rust-analyzer-display-closure-return-type-hints t)
+  (lsp-rust-analyzer-display-parameter-hints nil)
+  (lsp-rust-analyzer-display-reborrow-hints nil))
+
+;; LaTeX setup
+(use-package tex
+  :straight (auctex :type git :host github :repo "emacs-straight/auctex" :files ("*" (:exclude ".git")))
+  :custom (-default TeX-master nil)
+  (TeX-parse-self t)
+  (TeX-auto-save t)
+  (Tex-electric-math (cons "$" "$")))
+;; For cross references and interfile navigation for tex
+(require 'reftex)
+(add-hook 'LaTeX-mode-hook 'turn-on-reftex)   ; with AUCTeX LaTeX mode
+
+;; Java
+(use-package lsp-java
+  :custom (lsp-java-jdt-download-url "https://www.eclipse.org/downloads/download.php?file=/jdtls/milestones/1.37.0/jdt-language-server-1.37.0-202406271335.tar.gz")
+  (lsp-java-import-gradle-enabled t)
+  (lsp-java-configuration-runtimes '[(:name "JavaSE-21"
+                                            :path "/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home"
+                                            :default t)])
+  (lsp-java-import-gradle-wrapper-enabled t))
 
 ;;This works somehow
 ;; Sets up emacs for typescript using tide-mode
@@ -224,37 +218,23 @@ path and tries invoking `executable-find' again."
   (typescript-ts-mode company flycheck)
   (flycheck-add-mode 'typescript-tslint 'web-mode)
   (flycheck-add-mode 'javascript-eslint 'tide-mode)
-  :config (advice-add 'tide-references :after (lambda ()(switch-to-buffer "*tide-references*")))  )
-
-(add-hook 'typescript-ts-mode-hook #'setup-tide-mode)
+  :config (advice-add 'tide-references :after (lambda ()(switch-to-buffer "*tide-references*")))
+  :hook (typescript-ts-mode . setup-tide-mode))
 
 ;; Format js and ts code
 (use-package prettier-js
   :hook 
   (tide-mode . prettier-js-mode)
-  (web-mode . prettier-js-mode)
-  )
+  (web-mode . prettier-js-mode))
 
-(use-package web-mode)
-(add-to-list 'auto-mode-alist '("\\.ts\\'" . typescript-ts-mode))
-(add-to-list 'auto-mode-alist '("\\.tsx\\'" . web-mode))
-(add-hook 'web-mode-hook
-	 (lambda ()
-	   (when (string-equal "tsx" (file-name-extension buffer-file-name))
-	     (setup-tide-mode))))
+(use-package web-mode
+  :mode ("\\.ts\\'" . typescript-ts-mode)
+  ("\\.tsx\\'" . web-mode)
+  :hook (web-mode . (lambda ()
+		      (when (string-equal "tsx" (file-name-extension buffer-file-name))
+			(setup-tide-mode)))))
 
 
-;; Function to use your node_modules's TSServer to avoid possible collisions with project's Typescript version and Global Typescript version
-(defun tsserver-node-modules ()
-  (let* ((root (locate-dominating-file
-                (or (buffer-file-name) default-directory)
-                "node_modules"))
-         (tsserver
-          (and root
-               (expand-file-name "node_modules/.bin/tsserver"
-                                 root))))
-    (when (and tsserver (file-executable-p tsserver))
-      (setq-default tide-tsserver-executable tsserver))))
 (use-package elisp-slime-nav
   :hook (elisp-mode . elisp-slime-nav-mode)
   )
