@@ -527,36 +527,36 @@ path and tries invoking `executable-find' again."
 
 ;; My own custom functions
 (defun jump-to-end-of-buffer ()
-  (goto-char (point-max))
-  )
+  (goto-char (point-max)))
 
 (defun get-readable-time ()
   (interactive)
-  (substring (current-time-string) 11 16)
-  )
+  (substring (current-time-string) 11 16))
 
 (defun insert-current-time () "Inserts the current time in 24 hour format in the current buffer"
       (interactive)
-      (insert (get-readable-time))
-      )
+      (insert (get-readable-time)))
 
-;; Music and audiobooks setup
+;;; Music and audiobooks setup
+
+;; Music
 (use-package emms
   :straight (emms :type git :host github :repo "emacsmirror/emms")
+  :custom   (emms-player-list '(
+				emms-player-mpg321
+				emms-player-ogg123
+				emms-player-mplayer))
+  (emms-volume-change-function 'emms-player-mplayer-volume)
+  (emms-source-file-default-directory "~/audiobooks/")
+  (emms-info-functions '(emms-info-tinytag))
   :config
   (require 'emms-setup)
   (require 'emms-player-mplayer)
   (emms-all)
-  (setq emms-player-list '(
-                           emms-player-mpg321
-                           emms-player-ogg123
-                           emms-player-mplayer))
   (defun emms-player-mplayer-volume(amount)
     (process-send-string
      emms-player-simple-process-name
      (format "volume %d\n" amount)))
-  (setq emms-volume-change-function 'emms-player-mplayer-volume)
-  (setq emms-source-file-default-directory "~/audiobooks/")
   (emms-add-directory-tree emms-source-file-default-directory)
   (defun emms-bookmark-on-pause ()
     (if (emms-playlist-current-selected-track)
@@ -569,27 +569,16 @@ path and tries invoking `executable-find' again."
       (setq bookmark (emms-bookmarks-next))))
     (emms-bookmarks-clear))
   :hook (emms-player-paused . emms-bookmark-on-pause)
-  (emms-player-started . emms-jump-to-bookmark-on-play))
-
-
-;;(define-emms-simple-player mplayer '(file url)
-;;     (regexp-opt '(".ogg" ".mp3" ".wav" ".mpg" ".mpeg" ".wmv" ".wma"
-;;		   ".mov" ".avi" ".divx" ".ogm" ".asf" ".mkv" "http://" "mms://"
-;;		   ".rm" ".rmvb" ".mp4" ".flac" ".vob" ".m4a" ".flv" ".ogv" ".pls"))
-;;     "mplayer" "-slave" "-quiet" "-really-quiet" "-fullscreen")
-
-(setq emms-info-functions '(emms-info-tinytag))
-(setq emms-source-file-default-directory "~/audiobooks/")
-;; Toggles between playing and paused despite only being called pause
-(global-set-key (kbd "C-x p") 'emms-pause)
+  (emms-player-started . emms-jump-to-bookmark-on-play)
+  :bind ;; Toggles between playing and paused despite only being called pause
+  ("C-x p" . emms-pause))
 
 ;; Magit
 (use-package magit
   :custom
   (global-magit-file-mode 1)
   (magit-define-global-key-bindings t)
-  )
-(global-set-key (kbd "C-c g") 'magit-file-dispatch)
+  :bind ("C-c g" . magit-file-dispatch))
 
 ;; Diary and calendar stuff
 (setq diary-file "~/.emacs.d/diary")
