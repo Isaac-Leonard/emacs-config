@@ -17,6 +17,9 @@
   (keymap-global-set "C-e r" 'emacspeak-restart))
 
 (emacspeak-restart)
+;; Disable speaking words as all caps in buffers.
+(add-hook 'after-change-major-mode-hook (lambda () (setq dtk-caps nil)))
+(add-hook 'after-change-major-mode-hook (lambda () (setq dtk-caps nil)))
 
 ;; Make the startup cleaner
 (tool-bar-mode -1)
@@ -45,6 +48,12 @@ Image types are symbols like `xbm' or `jpeg'."
   (interactive)
   (find-file "~/.emacs.d/init.el"))
 
+;; Function to check if we have a valid internet connection.
+(defun internet-up-p (&optional host)
+  "Checks to see if the internet is working"
+  (= 0 (call-process "ping" nil nil nil "-c" "1" "-W" "1" 
+                     (if host host "www.google.com"))))
+
 ;; Enable proper sound support on macos
 ;; Based on https://github.com/leoliu/play-sound-osx
 (unless (and (fboundp 'play-sound-internal)
@@ -70,6 +79,9 @@ Image types are symbols like `xbm' or `jpeg'."
 ;; Don't notify about autosaving
 (setq-default auto-save-no-message t)
 
+;; Make browsing files nicer with emacspeak
+(add-hook 'dired-mode-hook #'dired-hide-details-mode)
+
 ;; custom-set-variables was added by Custom.
 ;; If you edit it by hand, you could mess it up, so be careful.
 ;; Your init file should contain only one such instance.
@@ -79,15 +91,6 @@ Image types are symbols like `xbm' or `jpeg'."
 			'((lsp-rust-features . ["heap"])
 			  (lsp-rust-features . ["all"])
 			  (lsp-rust-features . listp))))
-
-;; Nicer buffer switching and file switching
-(ido-mode t)
-(setq ido-use-filename-at-point 'guess)
-(setq ido-use-url-at-point t)
-(setq ido-show-dot-for-dired t)
-(ido-everywhere t)
-(setq emacspeak-ido-typing-delay 0.4)
-(setq ido-enable-flex-matching t)
 
 
 ;;; Straight package setup
@@ -113,6 +116,20 @@ Image types are symbols like `xbm' or `jpeg'."
 ;; Use "use-package" and download if on older versions of emacs
 (straight-use-package 'use-package)
 
+;; Nicer buffer switching and file switching
+(ido-mode t)
+(setq ido-use-filename-at-point 'guess)
+(setq ido-use-url-at-point t)
+(setq ido-show-dot-for-dired t)
+(ido-everywhere t)
+(setq emacspeak-ido-typing-delay 0.4)
+(setq ido-enable-flex-matching t)
+
+;; Ido for commands accessed through M-x
+(use-package smex
+  :bind (("M-x" . smex))
+  :config (smex-initialize))
+
 ;; This ensures most emacs related configuration and cache files get tucked away in the same place.
 (use-package no-littering)
 
@@ -122,8 +139,14 @@ Image types are symbols like `xbm' or `jpeg'."
 ;; Hide those nasty autosave files
 (setq auto-save-file-name-transforms `(("." ,(no-littering-expand-var-file-name "auto-save/") t)))
 
-;; Disable Lock files till we work out a better way to create them.
+;; Hide lock files away so they don't clutter directories.
 (setq lock-file-name-transforms `(("." ,(no-littering-expand-var-file-name "lock/") t)))
+
+;; Lets us access the contents of the kill ring directly.
+(use-package browse-kill-ring)
+
+;; Limit how many items can be in the kill ring at once.
+(setq kill-ring-max 1000)
 
 ;;; Programming configuration
 
@@ -147,6 +170,7 @@ Image types are symbols like `xbm' or `jpeg'."
   ;; Start offering suggestions as soon as we start typing
   :custom (company-minimum-prefix-length 1)
   (global-company-mode t)
+  (company-idle-delay 0.8)
   ;; This is just annoying to have enabled
   ;; Disables function parameters being inserted automatically when selecting completion for a function when writing c and c++
   (company-clang-insert-arguments nil)
@@ -250,6 +274,7 @@ path and tries invoking `executable-find' again."
 
 ;; Java
 (use-package lsp-java
+  :hook (java-mode . (lambda()(setq tab-width 4)))
   :custom (lsp-java-jdt-download-url "https://www.eclipse.org/downloads/download.php?file=/jdtls/milestones/1.37.0/jdt-language-server-1.37.0-202406271335.tar.gz")
   (lsp-java-import-gradle-enabled t)
   (lsp-java-configuration-runtimes '[(:name "JavaSE-21"
@@ -305,6 +330,32 @@ path and tries invoking `executable-find' again."
 		      (when (string-equal "tsx" (file-name-extension buffer-file-name))
 			(setup-tide-mode)))))
 
+;; runs eslint --fix on the current file after save
+;; alpha quality -- use at your own risk
+;; From https://gist.github.com/ustun/73321bfcb01a8657e5b8
+(defun eslint-fix-file ()
+  (interactive)
+  (message "eslint --fixing the file" (buffer-file-name))
+  (shell-command (concat "eslint --fix " (buffer-file-name))))
+
+(defun eslint-fix-file-and-revert ()
+  (interactive)
+  (eslint-fix-file)
+  (revert-buffer t t))
+
+(add-hook 'js2-mode-hook
+          (lambda ()
+            (add-hook 'after-save-hook #'eslint-fix-file-and-revert)))
+
+(defun kill-type-definition-buffers ()
+  "Kills any *.d.ts buffers"
+  (interactive)
+  (kill-matching-buffers "[A-Za-z\-]*.d.ts[A-Za-z\-<>]*" t t))
+(setq help-window-select t)
+
+(add-hook 'flycheck-mode-hook (lambda() (bind-key "C-c n" (lambda ()(interactive) (flycheck-next-error)(run-with-timer 3.4 nil 'cancel-timer (run-with-idle-timer 3 nil 'emacspeak-speak-line '(4)))))
+				(bind-key "C-c p" (lambda ()(interactive) (flycheck-previous-error) (run-with-timer 3.4 nil 'cancel-timer (run-with-idle-timer 3 nil 'emacspeak-speak-line '(4)))))))
+
 ;;; Text processing and writing
 
 ;; Org- setup
@@ -333,6 +384,9 @@ path and tries invoking `executable-find' again."
     ;; From https://www.reddit.com/r/emacs/comments/fgcw2b/org_change_date_format_only_on_export/
   ;; custom format to 'euro' timestamp
   (org-time-stamp-custom-formats '("<%d.%m.%Y>" . "<%d.%m.%Y %a %H:%M>"))
+  (org-duration-format (quote h:mm))
+  ;; Stop numbers moving to the right in org tables
+  (org-table-number-fraction 1.1)
   (org-plantuml-executable-path (expand-file-name "/usr/local/bin/plantuml"))
   (org-plantuml-exec-mode 'plantuml)
   (org-odt-preferred-output-format "docx")
@@ -629,7 +683,18 @@ path and tries invoking `executable-find' again."
   (emacspeak-toggle-audio-indentation))
 
 (use-package plantuml-mode
-  :hook (plantuml-mode . setup-plantuml-mode))
+  :hook (plantuml-mode . setup-plantuml-mode)
+  :config (defun plantuml-find-entity ()
+	    "Try jump to the name of the refered entity for plantuml"
+	    (interactive)
+	    (let ((name (thing-at-point 'word t)))
+	      (progn (search-backward (concat "entity " name) nil t)
+		     (beginning-of-line 1)
+		     (forward-word)
+		     (forward-char)
+		     (emacspeak-speak-word)
+		     )
+	      )))
 
 ;; Helper function
 (defun do-lines (fun &optional start end)
@@ -732,6 +797,81 @@ path and tries invoking `executable-find' again."
 
 (define-key smudge-command-map (kbd "M-v") #'smudge-controller-set-volume)
 
+;; Starts the spotifyd demon and attempts to restart it on crashes
+(defun run-spotifyd ()
+  "Runs spotifyd and seemlessly restarts it on crashes"
+  (interactive)
+  (if (internet-up-p "play.spotify.com")
+      (progn
+	(make-process
+	 :name "spotifyd"
+	 :command (list "spotifyd" "--no-daemon")
+	 :sentinel (lambda (a b)
+		     (run-spotifyd)))
+	(run-with-timer 1 nil  (lambda() (smudge-api-device-list
+					  (lambda (json)
+					    (when-let ((devices (gethash 'devices json)))
+					      (while (let* ((device (car devices))
+							    (is-active (smudge-device-get-device-is-active device))
+							    (name (smudge-device-get-device-name device))
+							    (is-daemon (= (string-match "Demon" name) 0))
+							    (device-id (smudge-device-get-device-id device)))
+						       (progn
+							 (if (and device is-active)
+							     (progn
+							       (setq smudge-selected-device-id device-id)
+							       (smudge-controller-player-status))
+							   (if is-daemon
+							       (smudge-api-transfer-player
+								device-id
+								(lambda (json)
+								  (setq smudge-selected-device-id device-id)
+								  (smudge-controller-set-volume 70)
+								  (smudge-controller-toggle-play)
+								  (message "Device '%s' selected" name)))))
+							 (setq devices (cdr devices))
+							 (and device (not (or is-daemon is-active))))))))))))
+    (message "spotify appears to be down")))
+;; Conveniance functions for smudge that use ido instead of full buffers
+(defun completing-read-by (fn prompt list &rest args)
+  "Apply FN to each element of LIST and prompt the user to select a resulting value.
+The output of the function will be the corresponding element of LIST
+ARGS will be passed to `completing-read' after the PROMPT and COLLECTION arguments.
+Copied from:
+https://emacs.stackexchange.com/a/26527
+with modifications made for ido"
+  (let ((hash (make-hash-table :test 'equal))
+	(keys (list)))
+    (mapc (lambda (elem)
+	    (let ((key (funcall fn elem)))
+	      (puthash key elem hash)
+	      (push key keys))) list)
+    (gethash (ido-completing-read prompt keys) hash)))
+
+(defun smudge-playlist-tracks-view (playlist)
+  "Displays the tracks that belongs to the playlist passed to it"
+  (interactive)
+  (let* ((selected-playlist (smudge-api-get-item-id playlist))
+         (name (smudge-api-get-item-name playlist))
+         (buffer (get-buffer-create (format "*Playlist Tracks: %s*" name))))
+    (with-current-buffer buffer
+      (smudge-track-search-mode)
+      (setq-local smudge-selected-playlist playlist)
+      (smudge-track-playlist-tracks-update 1))))
+
+(defun smudge-playlists-view ()
+  "Shows a list of user playlists for selection in an ido completion buffer"
+  (interactive)
+  (smudge-api-current-user
+   (lambda (user)
+    (smudge-api-user-playlists
+       (smudge-api-get-item-id user)
+     1
+     (lambda (playlists)
+       (if-let ((items (smudge-api-get-items playlists)))
+	   (smudge-playlist-tracks-view (completing-read-by 'smudge-api-get-item-name "Playlist: " items))
+         (message "No more playlists")))))))
+
 ;; Disable EWW line trunkation
 (defadvice shr-fill-text (around shr-no-fill-text activate)
   "Do not fill text when `shr-no-fill-mode' is enabled."
@@ -807,30 +947,27 @@ path and tries invoking `executable-find' again."
 (setq mu4e-display-update-status-in-modeline t)
 (setq mu4e-headers-precise-alignment t)
 (advice-add 'mu4e~headers-truncate-field-precise :override (lambda (field val width) val))
+(mu4e-update-mail-and-index t)
 
-(use-package pdf-tools
-  :config (pdf-tools-install))
+;; Kill zomby mu processes
+(add-hook 'mu4e-update-pre-hook (lambda ()(run-with-timer 240 nil 'mu4e-kill-update-mail)))
 
-(defun plantuml-find-entity ()
-  "Try jump to the name of the refered entity for plantuml"
-  (interactive)
-  (let ((name (thing-at-point 'word t)))
-    (progn (search-backward (concat "entity " name) nil t)
-	   (beginning-of-line 1)
-	   (forward-word)
-	   (forward-char)
-	   (emacspeak-speak-word)
-	   )
-    )
-)
+;;; Easier navigation in certain contexts
 
-(setq company-idle-delay 1)
+(use-package god-mode
+  :bind ("M-g m" . (lambda ()
+				(interactive)
+				(god-local-mode 'toggle)
+				(read-only-mode 'toggle))))
+
+;;; Odd useful functions
 
 (defun safe-replace-string(char1 char2)
   "replace-string for non interactive use"
   (save-excursion   (beginning-of-buffer)
 		    (while (search-forward char1 nil t)
 		      (replace-match char2 nil t))))
+
 (defun switch-letters (char1 char2)
   "Replaces all instances of char 1 with char1 and all instances of char2 with char1"
   (interactive "MCharacter 1\nMCharacter2")
@@ -841,115 +978,6 @@ path and tries invoking `executable-find' again."
 		  (beginning-of-buffer)
 		  (safe-replace-string "1" char2)))
 
-(use-package yasnippet
-  :config (yas-global-mode t))
-(use-package yasnippet-snippets)
-
-(use-package god-mode)
-(global-set-key (kbd "M-g m") (lambda ()
-				(interactive)
-				(god-local-mode 'toggle)
-				(read-only-mode 'toggle)))
-
-(use-package smex
-  :bind (("M-x" . smex))
-  :config (smex-initialize))
-
-(use-package pass)
-
-(mu4e-update-mail-and-index t)
-(add-hook 'after-change-major-mode-hook (lambda () (setq dtk-caps nil)))
-
-(save-place-mode)
-
-;; Starts the spotifyd demon and attempts to restart it on crashes
-(defun run-spotifyd ()
-  "Runs spotifyd and seemlessly restarts it on crashes"
-  (interactive)
-  (if (internet-up-p "play.spotify.com")
-      (progn
-	(make-process
-	 :name "spotifyd"
-	 :command (list "spotifyd" "--no-daemon")
-	 :sentinel (lambda (a b)
-		     (run-spotifyd)))
-	(run-with-timer 1 nil  (lambda() (smudge-api-device-list
-					  (lambda (json)
-					    (when-let ((devices (gethash 'devices json)))
-					      (while (let* ((device (car devices))
-							    (is-active (smudge-device-get-device-is-active device))
-							    (name (smudge-device-get-device-name device))
-							    (is-daemon (= (string-match "Demon" name) 0))
-							    (device-id (smudge-device-get-device-id device)))
-						       (progn
-							 (if (and device is-active)
-							     (progn
-							       (setq smudge-selected-device-id device-id)
-							       (smudge-controller-player-status))
-							   (if is-daemon
-							       (smudge-api-transfer-player
-								device-id
-								(lambda (json)
-								  (setq smudge-selected-device-id device-id)
-								  (smudge-controller-set-volume 70)
-								  (smudge-controller-toggle-play)
-								  (message "Device '%s' selected" name)))))
-							 (setq devices (cdr devices))
-							 (and device (not (or is-daemon is-active))))))))))))
-    (message "spotify appears to be down")))
-
-;; Tries to start the music when we open emacs
-;;(add-hook 'after-init-hook (lambda ()
-;;			     (run-spotifyd)))
-
-(defun internet-up-p (&optional host)
-  "Checks to see if the internet is working"
-  (= 0 (call-process "ping" nil nil nil "-c" "1" "-W" "1" 
-                     (if host host "www.google.com"))))
-
-(use-package browse-kill-ring)
-
-(defun completing-read-by (fn prompt list &rest args)
-  "Apply FN to each element of LIST and prompt the user to select a resulting value.
-The output of the function will be the corresponding element of LIST
-ARGS will be passed to `completing-read' after the PROMPT and COLLECTION arguments.
-Copied from:
-https://emacs.stackexchange.com/a/26527
-with modifications made for ido"
-  (let ((hash (make-hash-table :test 'equal))
-	(keys (list)))
-    (mapc (lambda (elem)
-	    (let ((key (funcall fn elem)))
-	      (puthash key elem hash)
-	      (push key keys))) list)
-    (gethash (ido-completing-read prompt keys) hash)))
-
-(defun smudge-playlist-tracks-view (playlist)
-  "Displays the tracks that belongs to the playlist passed to it"
-  (interactive)
-  (let* ((selected-playlist (smudge-api-get-item-id playlist))
-         (name (smudge-api-get-item-name playlist))
-         (buffer (get-buffer-create (format "*Playlist Tracks: %s*" name))))
-    (with-current-buffer buffer
-      (smudge-track-search-mode)
-      (setq-local smudge-selected-playlist playlist)
-      (smudge-track-playlist-tracks-update 1))))
-
-(defun smudge-playlists-view ()
-  "Shows a list of user playlists for selection in an ido completion buffer"
-  (interactive)
-  (smudge-api-current-user
-   (lambda (user)
-    (smudge-api-user-playlists
-       (smudge-api-get-item-id user)
-     1
-     (lambda (playlists)
-       (if-let ((items (smudge-api-get-items playlists)))
-	   (smudge-playlist-tracks-view (completing-read-by 'smudge-api-get-item-name "Playlist: " items))
-         (message "No more playlists")))))))
-
-(add-hook 'java-mode-hook (lambda()(setq tab-width 4)))
- 
 (defun find-first-non-ascii-char ()
   "Find the first non-ascii character from point onwards."
   (interactive)
@@ -966,38 +994,8 @@ with modifications made for ido"
         (goto-char point)
         (message "No non-ascii characters."))))
 
-(setq kill-ring-max 1000)
+;; Start up screen
 
-;;; runs eslint --fix on the current file after save
-;;; alpha quality -- use at your own risk
-;;; From https://gist.github.com/ustun/73321bfcb01a8657e5b8
-(defun eslint-fix-file ()
-  (interactive)
-  (message "eslint --fixing the file" (buffer-file-name))
-  (shell-command (concat "eslint --fix " (buffer-file-name))))
-
-(defun eslint-fix-file-and-revert ()
-  (interactive)
-  (eslint-fix-file)
-  (revert-buffer t t))
-
-(add-hook 'js2-mode-hook
-          (lambda ()
-            (add-hook 'after-save-hook #'eslint-fix-file-and-revert)))
-
-(defun kill-type-definition-buffers ()
-  "Kills any *.d.ts buffers"
-  (interactive)
-  (kill-matching-buffers "[A-Za-z\-]*.d.ts[A-Za-z\-<>]*" t t))
-(setq help-window-select t)
-
-(add-hook 'flycheck-mode-hook (lambda() (bind-key "C-c n" (lambda ()(interactive) (flycheck-next-error)(run-with-timer 3.4 nil 'cancel-timer (run-with-idle-timer 3 nil 'emacspeak-speak-line '(4)))))
-				(bind-key "C-c p" (lambda ()(interactive) (flycheck-previous-error) (run-with-timer 3.4 nil 'cancel-timer (run-with-idle-timer 3 nil 'emacspeak-speak-line '(4)))))))
-
-;; Kill zomby mu processes
-(add-hook 'mu4e-update-pre-hook (lambda ()(run-with-timer 240 nil 'mu4e-kill-update-mail)))
-
-;; Start up dashboard
 (use-package dashboard
   :config
   (dashboard-setup-startup-hook)
@@ -1044,9 +1042,13 @@ beginning or end of a physical line produces an  auditory icon."
   :config ;; (advice-add 'grep :after (open-buffer "*grep*"))
   (setq projectile-use-git-grep t))
 
+;;; Python configuration
+
+;; Formatting
 (use-package python-black
   :hook ((python-mode . python-black-on-save-mode)))
 
+;; Debugging
 (use-package dap-mode
   :after lsp-mode
   :commands dap-debug
@@ -1057,29 +1059,19 @@ beginning or end of a physical line produces an  auditory icon."
   (require 'dap-lldb)
   ;; Temporal fix
   (defun dap-python--pyenv-executable-find (command) (with-venv (executable-find "python"))) )
+
 (use-package python-mode
   :config
   (bind-key (kbd "C-c C-a") #'dd/py-auto-lsp python-mode-map))
 
 (use-package lsp-pyright
   :hook (python-mode . lsp))
+
 (use-package py-isort
   :hook ((python-mode . (lambda () (add-hook 'before-save-hook  'py-isort-before-save)))))
 
+;;; Automating work
 
-(setq lsp-sqls-connections '(((driver . "postgresql")
-			      (dataSourceName b. "host=127.0.0.1 port=5432 user=docker password=password dbname=docker"))))
-
-
-(defun my-sql-hook ()
-  (add-to-list 'flycheck-disabled-checkers 'lsp)
-  (flycheck-select-checker 'sql-sqlint)
-  (lsp))
-(add-hook 'sql-mode-hook #'my-sql-hook)
-
-(setq org-duration-format (quote h:mm))
-
-;; Automating work
 (defun clock-on ()
   "Opens ~/work/hours.org and adds the time to the end of the file"
   (interactive)
@@ -1097,8 +1089,7 @@ beginning or end of a physical line produces an  auditory icon."
   (save-window-excursion (switch-to-buffer "hours.org")
 		       (org-clock-out)
 		       (save-buffer)))
-(load-file (expand-file-name "~/.emacs.d/zoom.config.el.gpg"))
-(add-hook 'dired-mode-hook #'dired-hide-details-mode)
+
 ;; Emacspeaks' usage of the read function seems to be broken
 (setq emacspeak-pronounce-pronunciation-keys '(("buffer" . "buffer")
  ("file" . "file")
@@ -1211,12 +1202,7 @@ Returns a pair of the form (key-type . key)."
                '("\\.[rR]md\\'" . poly-gfm+r-mode))
   :custom (markdown-code-block-braces t))
 
-
 (advice-add 'ess-eval-region-or-function-or-paragraph-and-step :after (lambda (&optional v w)(switch-to-buffer "*R*")))
-
-;; Stop numbers moving to the right in org tables
-(setq org-table-number-fraction 1.1)
-
 
 (use-package flashcards
   :straight (flashcards :type git :host github :repo "Isaac-Leonard/flashcards.el"))
