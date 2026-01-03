@@ -39,6 +39,12 @@ Image types are symbols like `xbm' or `jpeg'."
 
 ;;; Global configuration
 
+;; Quickly open this file
+(defun open-init-file ()
+  "Opens the ~/.emacs.d/init.el file"
+  (interactive)
+  (find-file "~/.emacs.d/init.el"))
+
 ;;Update buffers when fixxing with linters and version control
 (global-auto-revert-mode)
 
@@ -54,6 +60,16 @@ Image types are symbols like `xbm' or `jpeg'."
 			'((lsp-rust-features . ["heap"])
 			  (lsp-rust-features . ["all"])
 			  (lsp-rust-features . listp))))
+
+;; Nicer buffer switching and file switching
+(ido-mode t)
+(setq ido-use-filename-at-point 'guess)
+(setq ido-use-url-at-point t)
+(setq ido-show-dot-for-dired t)
+(ido-everywhere t)
+(setq emacspeak-ido-typing-delay 0.4)
+(setq ido-enable-flex-matching t)
+
 
 ;;; Straight package setup
 ;;; This lets us use this config anywhere and packages will be installed automatically on start.
@@ -94,15 +110,16 @@ Image types are symbols like `xbm' or `jpeg'."
 
 ;; Elisp configuration comes first so we can correct any issues we introduce later in the file more easily.
 (use-package elisp-slime-nav
-  :hook (elisp-mode . elisp-slime-nav-mode))
+  :hook (elisp-mode . elisp-slime-nav-mode)
+  (help-mode . elisp-slime-nav-mode))
 
 ;; The following couple of packages are used almost everywhere.
 ;; Most of them are for programming, but some  like `company' have uses for general text processing.
-
 (use-package smartparens
+  :hook
+  (after-init . smartparens-global-mode)
   :config
   (require 'smartparens-config)
-  :hook   (after-change-major-mode . setup-smartparens)
   :bind (("C-9" . sp-beginning-of-sexp)
 	 ("C-0" . sp-end-of-sexp)))
 
@@ -117,18 +134,16 @@ Image types are symbols like `xbm' or `jpeg'."
   (company-selection-wrap-around t)
   )
 
-;; Sorts suggestions in order of most used
+;; Sort autocomplete suggestions in order of most used
 (use-package company-prescient
   :hook
   (prog-mode . company-prescient-mode)
-  (prog-mode . prescient-persist-mode)
-  )
+  (prog-mode . prescient-persist-mode))
 
 ;; Helpful for general writing
 (use-package company-wordfreq
   :straight (company-wordfreq :type git :host github :repo "johannes-mueller/company-wordfreq.el")
   :custom (ispell-local-dictionary "english")
-
   :hook (text-mode .  (lambda ()
                         (setq-local company-backends '(company-wordfreq))
                         (setq-local company-transformers nil))))
@@ -209,6 +224,9 @@ path and tries invoking `executable-find' again."
 ;; For cross references and interfile navigation for tex
 (require 'reftex)
 (add-hook 'LaTeX-mode-hook 'turn-on-reftex)   ; with AUCTeX LaTeX mode
+;; Auto-formatting for scentences
+(use-package twauctex
+  :straight (twauctex :type git :host github :repo "jeeger/twauctex"))
 
 ;; Java
 (use-package lsp-java
@@ -573,9 +591,67 @@ path and tries invoking `executable-find' again."
       (interactive)
       (insert (get-readable-time)))
 
+
+;; Magit
+(use-package magit
+  :custom
+  (global-magit-file-mode 1)
+  (magit-define-global-key-bindings t)
+  :bind ("C-c g" . magit-file-dispatch))
+
+;; Python jupitor mode
+(use-package ein)
+
+;; Uml
+(defun setup-plantuml-mode ()
+  (local-set-key (kbd "M-.") 'plantuml-find-entity)
+  (emacspeak-toggle-audio-indentation))
+
+(use-package plantuml-mode
+  :hook (plantuml-mode . setup-plantuml-mode))
+
+;; Helper function
+(defun do-lines (fun &optional start end)
+  "Invoke function FUN on the text of each line from START to END."
+  (interactive
+   (let ((fn   (intern (completing-read "Function: " obarray 'functionp t))))
+     (if (use-region-p)
+         (list fn (region-beginning) (region-end))
+       (list fn (point-min) (point-max)))))
+  (save-excursion
+    (goto-char start)
+    (while (< (point) end)
+      (funcall fun (buffer-substring (line-beginning-position) (line-end-position)))
+      (forward-line 1))))
+
+;; Arduinos
+(use-package arduino-mode)
+(use-package arduino-cli-mode)
+
+;; convert file to use one scentence per line mode
+(defun convert-to-one-sentence-per-line ()
+  "Adds newline after full stops in a file at the end of sentences"
+  (interactive)
+  (save-excursion
+    (beginning-of-buffer)
+    (while (search-forward-regexp "\\([a-z][a-z]\\|\\$\\)\\. " nil t)
+      (open-line 1)
+      (indent-relative-maybe)
+      ))
+  )
+
+;; Security settings
+(setq auth-sources '(password-store "~/.emacs.d/auth-info.gpg"))
+(setq epg-pinentry-mode 'loopback)
+
+(use-package pinentry
+  :config (pinentry-start))
+
+(setq mu4e-get-mail-command (format "INSIDE_EMACS=%s mbsync -a" emacs-version))
+
 ;;; Music and audiobooks setup
 
-;; Music
+;; Local files
 (use-package emms
   :straight (emms :type git :host github :repo "emacsmirror/emms")
   :custom   (emms-player-list '(
@@ -609,77 +685,13 @@ path and tries invoking `executable-find' again."
   :bind ;; Toggles between playing and paused despite only being called pause
   ("C-x p" . emms-pause))
 
-;; Magit
-(use-package magit
-  :custom
-  (global-magit-file-mode 1)
-  (magit-define-global-key-bindings t)
-  :bind ("C-c g" . magit-file-dispatch))
-
-;; Python jupitor mode
-(use-package ein)
-
-;; Uml
-(defun setup-plantuml-mode ()
-  (local-set-key (kbd "M-.") 'plantuml-find-entity)
-  (emacspeak-toggle-audio-indentation))
-
-(use-package plantuml-mode
-  :hook (plantuml-mode . setup-plantuml-mode))
-
-;; Helper function
-(defun do-lines (fun &optional start end)
-  "Invoke function FUN on the text of each line from START to END."
-  (interactive
-   (let ((fn   (intern (completing-read "Function: " obarray 'functionp t))))
-     (if (use-region-p)
-         (list fn (region-beginning) (region-end))
-       (list fn (point-min) (point-max)))))
-  (save-excursion
-    (goto-char start)
-    (while (< (point) end)
-      (funcall fun (buffer-substring (line-beginning-position) (line-end-position)))
-      (forward-line 1))))
-(setq TeX-electric-math (cons "$" "$"))
-
-;; Arduinos
-(use-package arduino-mode)
-(use-package arduino-cli-mode)
-
-;; Auto-formatting for scentences
-(use-package twauctex
-  :straight (twauctex :type git :host github :repo "jeeger/twauctex"))
-
-;; navigation to functions from help buffers
-(add-hook 'help-mode-hook 'elisp-slime-nav-mode)
-
-;; convert file to use one scentence per line mode
-(defun convert-to-one-sentence-per-line ()
-  "Adds newline after full stops in a file at the end of sentences"
-  (interactive)
-  (save-excursion
-    (beginning-of-buffer)
-    (while (search-forward-regexp "\\([a-z][a-z]\\|\\$\\)\\. " nil t)
-      (open-line 1)
-      (indent-relative-maybe)
-      ))
-  )
-
-
-;; Security settings
-(setq auth-sources '(password-store "~/.emacs.d/auth-info.gpg"))
-(setq epg-pinentry-mode 'loopback)
-
-(use-package pinentry
-  :config (pinentry-start))
-
-(setq mu4e-get-mail-command (format "INSIDE_EMACS=%s mbsync -a" emacs-version))
-
-(load-file "~/.emacs.d/smudge-config.el.gpg")
+;; Spotify
 (use-package smudge
-  :straight (smudge :type git :host github :repo "Isaac-Leonard/smudge"))
-(define-key smudge-mode-map (kbd "C-c .") 'smudge-command-map)
-(global-smudge-remote-mode)
+  :straight (smudge :type git :host github :repo "Isaac-Leonard/smudge")
+  :config (load-file "~/.emacs.d/smudge-config.el.gpg")
+  (global-smudge-remote-mode)
+  :bind (:map smudge-mode-map ("C-c ." . smudge-command-map))
+  :init (define-prefix-command 'smudge-command-map))
 
 ;; Disable EWW line trunkation
 (defadvice shr-fill-text (around shr-no-fill-text activate)
@@ -705,13 +717,6 @@ path and tries invoking `executable-find' again."
 
 (shr-no-fill-mode 1) ;; To enable by default.
 ;; M-x shr-no-fill-mode to toggle.
-
-;; Quickly open this file
-(defun open-init-file ()
-  "Opens the ~/.emacs.d/init.el file"
-  (interactive)
-  (find-file "~/.emacs.d/init.el")
-  )
 
 ;; Rust setup
 (use-package rustic
@@ -840,14 +845,6 @@ path and tries invoking `executable-find' again."
 		  (beginning-of-buffer)
 		  (safe-replace-string "1" char2)))
 
-(ido-mode t)
-(setq ido-use-filename-at-point 'guess)
-(setq ido-use-url-at-point t)
-(setq ido-show-dot-for-dired t)
-(ido-everywhere t)
-;;(setq ido-auto-merge-delay-time 0.9)
-(setq emacspeak-ido-typing-delay 0.4)
-(setq ido-enable-flex-matching t)
 (use-package yasnippet
   :config (yas-global-mode t))
 (use-package yasnippet-snippets)
