@@ -21,6 +21,12 @@
 (add-hook 'after-change-major-mode-hook (lambda () (setq dtk-caps nil)))
 (add-hook 'after-change-major-mode-hook (lambda () (setq dtk-caps nil)))
 
+(defun say-current-line ()
+  "Calls the say command with the text of the current line
+Intended for debugging when emacspeak is not working correctly"
+  (interactive)
+  (start-process "say" "*Say*" "say" (thing-at-point 'line)))
+
 ;; Make the startup cleaner
 (tool-bar-mode -1)
 (menu-bar-mode -1)
@@ -79,6 +85,9 @@ Image types are symbols like `xbm' or `jpeg'."
 ;; Don't notify about autosaving
 (setq-default auto-save-no-message t)
 
+;; Number of files emacs will remember where we were last time we edited it.
+(setq save-place-limit 100000)
+
 ;; Make browsing files nicer with emacspeak
 (add-hook 'dired-mode-hook #'dired-hide-details-mode)
 
@@ -92,6 +101,8 @@ Image types are symbols like `xbm' or `jpeg'."
 			  (lsp-rust-features . ["all"])
 			  (lsp-rust-features . listp))))
 
+;; Print elisp structures nicely.
+(setq print-circle t)
 
 ;;; Straight package setup
 ;;; This lets us use this config anywhere and packages will be installed automatically on start.
@@ -152,6 +163,31 @@ Image types are symbols like `xbm' or `jpeg'."
 (use-package vlf
   :config (require 'vlf-setup))
 
+;;; Project management
+
+(use-package projectile
+  :init
+  (projectile-mode +1)
+  :config ;; (advice-add 'grep :after (open-buffer "*grep*"))
+  (setq projectile-use-git-grep t))
+
+;; Git UI from within emacs
+(use-package magit
+  :custom
+  (global-magit-file-mode 1)
+  (magit-define-global-key-bindings t)
+  :bind ("C-c g" . magit-file-dispatch))
+;; Makes magit work
+(setq project-switch-commands t)
+
+;; Integrates with git hosters like github and gitlab to provide the ability to look at issues and PRs from within emacs.
+(use-package forge
+  :after magit)
+
+;; Allows for responding to inline comments on PRs
+(use-package code-review
+  :straight (code-review :type git :host github :repo "phelrine/code-review" :branch "fix/closql-update")
+  :custom (code-review-auth-login-marker 'code-review))
 
 ;;; Programming configuration
 
@@ -287,6 +323,8 @@ path and tries invoking `executable-find' again."
                                             :default t)])
   (lsp-java-import-gradle-wrapper-enabled t))
 
+;;; Web programming configuration.
+
 ;;This works somehow
 ;; Sets up emacs for typescript using tide-mode
 (defun setup-tide-mode ()
@@ -360,6 +398,173 @@ path and tries invoking `executable-find' again."
 
 (add-hook 'flycheck-mode-hook (lambda() (bind-key "C-c n" (lambda ()(interactive) (flycheck-next-error)(run-with-timer 3.4 nil 'cancel-timer (run-with-idle-timer 3 nil 'emacspeak-speak-line '(4)))))
 				(bind-key "C-c p" (lambda ()(interactive) (flycheck-previous-error) (run-with-timer 3.4 nil 'cancel-timer (run-with-idle-timer 3 nil 'emacspeak-speak-line '(4)))))))
+
+(use-package vue-mode)
+
+(use-package nodejs-repl
+  :custom (nodejs-repl-command "ts-node"))
+
+;;; Rust setup
+
+(use-package rustic
+  :bind (:map rustic-mode-map
+              ("M-j" . lsp-ui-imenu)
+              ("M-?" . lsp-find-references)
+              ("C-c C-c l" . flycheck-list-errors)
+              ("C-c C-c a" . lsp-execute-code-action)
+              ("C-c C-c r" . lsp-rename)
+              ("C-c C-c q" . lsp-workspace-restart)
+              ("C-c C-c Q" . lsp-workspace-shutdown)
+              ("C-c C-c s" . lsp-rust-analyzer-status))
+  :config
+  ;; (setq lsp-enable-symbol-highlighting nil)
+  ;; (setq lsp-signature-auto-activate nil)
+  (setq safe-local-variable-values '((lsp-rust-features . listp)))
+  (advice-add 'rustic-cargo-run :after (lambda (&optional v w)(switch-to-buffer "*cargo-run*")))
+  (advice-add 'rustic-cargo-check :after (lambda (&optional v w)(switch-to-buffer "*rustic-compilation*")))
+  (advice-add 'rustic-cargo-clippy :after (lambda (&optional v w)(switch-to-buffer "*cargo-clippy*")))
+  (add-hook 'rustic-mode-hook 'flycheck-mode)
+  (add-hook 'rustic-mode-hook #'(lambda() (add-hook 'before-save-hook 'lsp-format-buffer nil t)))
+  (add-hook 'rustic-mode-hook #'(lambda () (setq-local tab-width 4)))
+  :custom (rustic-default-test-arguments "--all-features"))
+
+;; Functions for running tests for rust from within emacs.
+(defun rustic-cargo-insta-nextest-run (&optional test-args)
+  "Start compilation process for 'cargo insta test --test-runner=nextest' with optional TEST-ARGS."
+  (interactive)
+  (rustic-compilation-process-live)
+  (let* ((command (list (rustic-cargo-bin) "insta" "test" "--test-runner=nextest"))
+         (c (append command (split-string (if test-args test-args ""))))
+         (buf rustic-test-buffer-name)
+         (proc rustic-test-process-name)
+         (mode 'rustic-cargo-test-mode))
+    (rustic-compilation c (list :buffer buf :process proc :mode mode))))
+
+(defun rustic-cargo-insta-nextest (&optional arg)
+  "Run 'cargo insta test --test-runner=nextest'.
+
+If ARG is not nil, use value as argument and store it in `rustic-test-arguments'.
+When calling this function from `rustic-popup-mode', always use the value of
+`rustic-test-arguments'."
+  (interactive "P")
+  (rustic-cargo-insta-nextest-run
+   (cond (arg
+          (setq rustic-test-arguments (read-from-minibuffer "Cargo insta test --test-runner=nextest arguments: " rustic-default-test-arguments)))
+         (rustic-cargo-use-last-stored-arguments
+          (if (> (length rustic-test-arguments) 0)
+              rustic-test-arguments
+            rustic-default-test-arguments))
+         (t
+          rustic-default-test-arguments)))
+  (switch-to-buffer rustic-test-buffer-name))
+
+(defun rustic-cargo-nextest-run (&optional test-args)
+  "Start compilation process for 'cargo insta test --test-runner=nextest' with optional TEST-ARGS."
+  (interactive)
+  (rustic-compilation-process-live)
+  (let* ((command (list (rustic-cargo-bin) "nextest" "run"))
+         (c (append command (split-string (if test-args test-args ""))))
+         (buf rustic-test-buffer-name)
+         (proc rustic-test-process-name)
+         (mode 'rustic-cargo-test-mode))
+    (rustic-compilation c (list :buffer buf :process proc :mode mode))))
+
+(defun rustic-cargo-nextest (&optional arg)
+  "Run 'cargo insta test --test-runner=nextest'.
+
+If ARG is not nil, use value as argument and store it in `rustic-test-arguments'.
+When calling this function from `rustic-popup-mode', always use the value of
+`rustic-test-arguments'."
+  (interactive "P")
+  (rustic-cargo-nextest-run
+   (cond (arg
+          (setq rustic-test-arguments (read-from-minibuffer "Cargo nextest arguments: ")))
+         (rustic-cargo-use-last-stored-arguments rustic-test-arguments)
+         (t
+          ())))
+  (switch-to-buffer rustic-test-buffer-name))
+
+;; C++ configuration
+;; TODO: This needs to be fixed
+(setq eglot-server-programs (list))
+(add-to-list 'eglot-server-programs
+	     `(c++-mode . ("run-lsp.sh")))
+
+;; Arduinos
+(use-package arduino-mode)
+(use-package arduino-cli-mode)
+
+;;; Go configuration
+(use-package go-mode)
+(setq lsp-go-analyses '((shadow . t)
+                        (simplifycompositelit . :json-false)))
+
+;;; Python configuration
+
+;; Formatting
+(use-package python-black
+  :hook ((python-mode . python-black-on-save-mode)))
+
+;; Debugging
+(use-package dap-mode
+  :after lsp-mode
+  :commands dap-debug
+  :hook ((python-mode . dap-ui-mode)
+	 (python-mode . dap-mode))
+  :config (eval-when-compile (require 'cl))
+  (require 'dap-python)
+  (require 'dap-lldb)
+  ;; Temporal fix
+  (defun dap-python--pyenv-executable-find (command) (with-venv (executable-find "python"))) )
+
+(use-package python-mode
+  :config (bind-key (kbd "C-c C-a") #'dd/py-auto-lsp python-mode-map)
+  :custom (lsp-ruff-python-path "/opt/homebrew/bin/python3.13"))
+
+(use-package lsp-pyright
+  :hook (python-mode . lsp))
+
+(use-package py-isort
+  :hook ((python-mode . (lambda () (add-hook 'before-save-hook  'py-isort-before-save)))))
+
+;; Python jupitor mode
+(use-package ein)
+
+;; R and R markdown setup
+(defun pm--visible-buffer-name()
+  "Stand in for missing polymode function"
+  ;; Not sure if this will do the job
+  (buffer-name))
+
+(use-package ess)
+(use-package polymode)
+(use-package poly-R
+  :config
+  (add-to-list 'auto-mode-alist
+               '("\\.[rR]md\\'" . poly-gfm+r-mode))
+  :custom (markdown-code-block-braces t))
+
+(advice-add 'ess-eval-region-or-function-or-paragraph-and-step :after (lambda (&optional v w)(switch-to-buffer "*R*")))
+
+;;; Accessible textual Uml diagrams
+
+(defun setup-plantuml-mode ()
+  (local-set-key (kbd "M-.") 'plantuml-find-entity)
+  (emacspeak-toggle-audio-indentation))
+
+(use-package plantuml-mode
+  :hook (plantuml-mode . setup-plantuml-mode)
+  :config (defun plantuml-find-entity ()
+	    "Try jump to the name of the refered entity for plantuml"
+	    (interactive)
+	    (let ((name (thing-at-point 'word t)))
+	      (progn (search-backward (concat "entity " name) nil t)
+		     (beginning-of-line 1)
+		     (forward-word)
+		     (forward-char)
+		     (emacspeak-speak-word)
+		     )
+	      )))
 
 ;;; Text processing and writing
 
@@ -658,87 +863,14 @@ path and tries invoking `executable-find' again."
   :config (elfeed-org)
   :custom (rmh-elfeed-org-files (list "~/.emacs.d/elfeed.org")))
 
-;; My own custom functions
-(defun jump-to-end-of-buffer ()
-  (goto-char (point-max)))
+;;; Security and authentication
+;; TODO: Harden this to prevent damage from possible malishous packages.
 
-(defun get-readable-time ()
-  (interactive)
-  (substring (current-time-string) 11 16))
-
-(defun insert-current-time () "Inserts the current time in 24 hour format in the current buffer"
-      (interactive)
-      (insert (get-readable-time)))
-
-;; Magit
-(use-package magit
-  :custom
-  (global-magit-file-mode 1)
-  (magit-define-global-key-bindings t)
-  :bind ("C-c g" . magit-file-dispatch))
-;; Makes magit work
-(setq project-switch-commands t)
-
-;; Python jupitor mode
-(use-package ein)
-
-;; Uml
-(defun setup-plantuml-mode ()
-  (local-set-key (kbd "M-.") 'plantuml-find-entity)
-  (emacspeak-toggle-audio-indentation))
-
-(use-package plantuml-mode
-  :hook (plantuml-mode . setup-plantuml-mode)
-  :config (defun plantuml-find-entity ()
-	    "Try jump to the name of the refered entity for plantuml"
-	    (interactive)
-	    (let ((name (thing-at-point 'word t)))
-	      (progn (search-backward (concat "entity " name) nil t)
-		     (beginning-of-line 1)
-		     (forward-word)
-		     (forward-char)
-		     (emacspeak-speak-word)
-		     )
-	      )))
-
-;; Helper function
-(defun do-lines (fun &optional start end)
-  "Invoke function FUN on the text of each line from START to END."
-  (interactive
-   (let ((fn   (intern (completing-read "Function: " obarray 'functionp t))))
-     (if (use-region-p)
-         (list fn (region-beginning) (region-end))
-       (list fn (point-min) (point-max)))))
-  (save-excursion
-    (goto-char start)
-    (while (< (point) end)
-      (funcall fun (buffer-substring (line-beginning-position) (line-end-position)))
-      (forward-line 1))))
-
-;; Arduinos
-(use-package arduino-mode)
-(use-package arduino-cli-mode)
-
-;; convert file to use one scentence per line mode
-(defun convert-to-one-sentence-per-line ()
-  "Adds newline after full stops in a file at the end of sentences"
-  (interactive)
-  (save-excursion
-    (beginning-of-buffer)
-    (while (search-forward-regexp "\\([a-z][a-z]\\|\\$\\)\\. " nil t)
-      (open-line 1)
-      (indent-relative-maybe)
-      ))
-  )
-
-;; Security settings
 (setq auth-sources '(password-store "~/.emacs.d/auth-info.gpg"))
 (setq epg-pinentry-mode 'loopback)
 
 (use-package pinentry
   :config (pinentry-start))
-
-(setq mu4e-get-mail-command (format "INSIDE_EMACS=%s mbsync -a" emacs-version))
 
 ;;; Music and audiobooks setup
 
@@ -877,57 +1009,20 @@ with modifications made for ido"
 	   (smudge-playlist-tracks-view (completing-read-by 'smudge-api-get-item-name "Playlist: " items))
          (message "No more playlists")))))))
 
-;; Disable EWW line trunkation
-(defadvice shr-fill-text (around shr-no-fill-text activate)
-  "Do not fill text when `shr-no-fill-mode' is enabled."
-  (if (bound-and-true-p shr-no-fill-mode)
-      (ad-get-arg 0)
-    ad-do-it))
+;; Shuts up warnings when not connected to internet
+(advice-add 'smudge-controller-player-status :around (lambda (fn) (if (internet-up-p) (funcall fn))) nil)
 
-(defadvice shr-fill-lines (around shr-no-fill-lines activate)
-  "Do not fill text when `shr-no-fill-mode' is enabled."
-  (unless (bound-and-true-p shr-no-fill-mode)
-    ad-do-it))
+(defun speak-smudge-player-status ()
+  "Update and speak the current spotify status"
+  (interactive)
+  (smudge-controller-player-status)
+  (dtk-speak smudge-controller-player-status))
+(keymap-global-set "C-c . c" 'speak-smudge-player-status)
 
-(defadvice shr-fill-line (around shr-no-fill-line activate)
-  "Do not fill text when `shr-no-fill-mode' is enabled."
-  (unless (bound-and-true-p shr-no-fill-mode)
-    ad-do-it))
-
-(define-minor-mode shr-no-fill-mode
-  "Global minor mode which prevents `shr' and `eww' from filling text output."
-  ;; :lighter (:eval (if (derived-mode-p 'eww-mode) " ShrNoFill"))
-  :global t)
-
-(shr-no-fill-mode 1) ;; To enable by default.
-;; M-x shr-no-fill-mode to toggle.
-
-;; Rust setup
-(use-package rustic
-  :bind (:map rustic-mode-map
-              ("M-j" . lsp-ui-imenu)
-              ("M-?" . lsp-find-references)
-              ("C-c C-c l" . flycheck-list-errors)
-              ("C-c C-c a" . lsp-execute-code-action)
-              ("C-c C-c r" . lsp-rename)
-              ("C-c C-c q" . lsp-workspace-restart)
-              ("C-c C-c Q" . lsp-workspace-shutdown)
-              ("C-c C-c s" . lsp-rust-analyzer-status))
-  :config
-  ;; (setq lsp-enable-symbol-highlighting nil)
-  ;; (setq lsp-signature-auto-activate nil)
-  (setq safe-local-variable-values '((lsp-rust-features . listp)))
-  (advice-add 'rustic-cargo-run :after (lambda (&optional v w)(switch-to-buffer "*cargo-run*")))
-  (advice-add 'rustic-cargo-check :after (lambda (&optional v w)(switch-to-buffer "*rustic-compilation*")))
-  (advice-add 'rustic-cargo-clippy :after (lambda (&optional v w)(switch-to-buffer "*cargo-clippy*")))
-  (add-hook 'rustic-mode-hook 'flycheck-mode)
-  (add-hook 'rustic-mode-hook #'(lambda() (add-hook 'before-save-hook 'lsp-format-buffer nil t)))
-  (add-hook 'rustic-mode-hook #'(lambda () (setq-local tab-width 4)))
-  :custom (rustic-default-test-arguments "--all-features"))
-
-;; Email
+;;; Email
 (add-to-list 'load-path (directory-file-name "/opt/homebrew/share/emacs/site-lisp/mu/mu4e"))
 (load-file "~/.config/mu4e/mu4e-config.el")
+(setq mu4e-get-mail-command (format "INSIDE_EMACS=%s mbsync -a" emacs-version))
 ;; Fetch email every 5 minutes
 (setq mu4e-update-interval (* 60 5))
 (setq mu4e-compose-signature "Best regards Isaac")
@@ -957,6 +1052,33 @@ with modifications made for ido"
 ;; Kill zomby mu processes
 (add-hook 'mu4e-update-pre-hook (lambda ()(run-with-timer 240 nil 'mu4e-kill-update-mail)))
 
+;;; Web browsing
+
+;; Disable EWW line trunkation
+(defadvice shr-fill-text (around shr-no-fill-text activate)
+  "Do not fill text when `shr-no-fill-mode' is enabled."
+  (if (bound-and-true-p shr-no-fill-mode)
+      (ad-get-arg 0)
+    ad-do-it))
+
+(defadvice shr-fill-lines (around shr-no-fill-lines activate)
+  "Do not fill text when `shr-no-fill-mode' is enabled."
+  (unless (bound-and-true-p shr-no-fill-mode)
+    ad-do-it))
+
+(defadvice shr-fill-line (around shr-no-fill-line activate)
+  "Do not fill text when `shr-no-fill-mode' is enabled."
+  (unless (bound-and-true-p shr-no-fill-mode)
+    ad-do-it))
+
+(define-minor-mode shr-no-fill-mode
+  "Global minor mode which prevents `shr' and `eww' from filling text output."
+  ;; :lighter (:eval (if (derived-mode-p 'eww-mode) " ShrNoFill"))
+  :global t)
+
+(shr-no-fill-mode 1) ;; To enable by default.
+;; M-x shr-no-fill-mode to toggle.
+
 ;;; Easier navigation in certain contexts
 
 (use-package god-mode
@@ -965,41 +1087,48 @@ with modifications made for ido"
 				(god-local-mode 'toggle)
 				(read-only-mode 'toggle))))
 
-;;; Odd useful functions
+;;; Automating work
 
-(defun safe-replace-string(char1 char2)
-  "replace-string for non interactive use"
-  (save-excursion   (beginning-of-buffer)
-		    (while (search-forward char1 nil t)
-		      (replace-match char2 nil t))))
-
-(defun switch-letters (char1 char2)
-  "Replaces all instances of char 1 with char1 and all instances of char2 with char1"
-  (interactive "MCharacter 1\nMCharacter2")
-  (save-excursion (beginning-of-buffer)
-		  (safe-replace-string char1 "1")
-		  (beginning-of-buffer)
-		  (safe-replace-string char2 char1)
-		  (beginning-of-buffer)
-		  (safe-replace-string "1" char2)))
-
-(defun find-first-non-ascii-char ()
-  "Find the first non-ascii character from point onwards."
+(defun clock-on ()
+  "Opens ~/work/hours.org and adds the time to the end of the file"
   (interactive)
-  (let (point)
-    (save-excursion
-      (setq point
-            (catch 'non-ascii
-              (while (not (eobp))
-                (or (eq (char-charset (following-char))
-                        'ascii)
-                    (throw 'non-ascii (point)))
-                (forward-char 1)))))
-    (if point
-        (goto-char point)
-        (message "No non-ascii characters."))))
+  (find-file "~/work/hours.org")
+  (goto-char (point-max))
+  (insert "* ")
+  (org-insert-time-stamp (current-time) nil t)
+  (insert "\n")
+  (org-clock-in)
+  (save-buffer))
 
-;; Start up screen
+(defun clock-off ()
+  "Jumps to the end of ~/work/hours.org and inserts the time"
+  (interactive)
+  (save-window-excursion (switch-to-buffer "hours.org")
+		       (org-clock-out)
+		       (save-buffer)))
+
+;;; Study
+
+(use-package flashcards
+  :straight (flashcards :type git :host github :repo "Isaac-Leonard/flashcards.el"))
+
+;;; AI setup
+
+(use-package gptel
+  :config
+  ;; OPTIONAL configuration
+  (setq
+   gptel-model   'test
+   gptel-backend (gptel-make-openai "llama-cpp"
+				    :stream t
+				    :protocol "http"
+				    :host "localhost:8080"
+				    :models '(test))))
+
+;; This should be part of elfeed but relies on gptel so is left here for now.
+(load-file "~/.emacs.d/custom-elfeed.el")
+
+;;; Start up screen
 
 (use-package dashboard
   :config
@@ -1041,153 +1170,43 @@ beginning or end of a physical line produces an  auditory icon."
   :custom (dashboard-projects-backend 'projectile)
   (dashboard-filter-agenda-entry 'dashboard-no-filter-agenda))
 
-(use-package projectile
-  :init
-  (projectile-mode +1)
-  :config ;; (advice-add 'grep :after (open-buffer "*grep*"))
-  (setq projectile-use-git-grep t))
+;;; Odd useful functions
 
-;;; Python configuration
+(defun safe-replace-string(char1 char2)
+  "replace-string for non interactive use"
+  (save-excursion   (beginning-of-buffer)
+		    (while (search-forward char1 nil t)
+		      (replace-match char2 nil t))))
 
-;; Formatting
-(use-package python-black
-  :hook ((python-mode . python-black-on-save-mode)))
+(defun switch-letters (char1 char2)
+  "Replaces all instances of char 1 with char1 and all instances of char2 with char1"
+  (interactive "MCharacter 1\nMCharacter2")
+  (save-excursion (beginning-of-buffer)
+		  (safe-replace-string char1 "1")
+		  (beginning-of-buffer)
+		  (safe-replace-string char2 char1)
+		  (beginning-of-buffer)
+		  (safe-replace-string "1" char2)))
 
-;; Debugging
-(use-package dap-mode
-  :after lsp-mode
-  :commands dap-debug
-  :hook ((python-mode . dap-ui-mode)
-	 (python-mode . dap-mode))
-  :config (eval-when-compile (require 'cl))
-  (require 'dap-python)
-  (require 'dap-lldb)
-  ;; Temporal fix
-  (defun dap-python--pyenv-executable-find (command) (with-venv (executable-find "python"))) )
-
-(use-package python-mode
-  :config
-  (bind-key (kbd "C-c C-a") #'dd/py-auto-lsp python-mode-map))
-
-(use-package lsp-pyright
-  :hook (python-mode . lsp))
-
-(use-package py-isort
-  :hook ((python-mode . (lambda () (add-hook 'before-save-hook  'py-isort-before-save)))))
-
-;; R and R markdown setup
-(use-package ess)
-(use-package polymode)
-(use-package poly-R
-  :config
-  (add-to-list 'auto-mode-alist
-               '("\\.[rR]md\\'" . poly-gfm+r-mode))
-  :custom (markdown-code-block-braces t))
-
-(advice-add 'ess-eval-region-or-function-or-paragraph-and-step :after (lambda (&optional v w)(switch-to-buffer "*R*")))
-
-;;; Automating work
-
-(defun clock-on ()
-  "Opens ~/work/hours.org and adds the time to the end of the file"
+(defun find-first-non-ascii-char ()
+  "Find the first non-ascii character from point onwards."
   (interactive)
-  (find-file "~/work/hours.org")
-  (goto-char (point-max))
-  (insert "* ")
-  (org-insert-time-stamp (current-time) nil t)
-  (insert "\n")
-  (org-clock-in)
-  (save-buffer))
-
-(defun clock-off ()
-  "Jumps to the end of ~/work/hours.org and inserts the time"
-  (interactive)
-  (save-window-excursion (switch-to-buffer "hours.org")
-		       (org-clock-out)
-		       (save-buffer)))
-
-(defun replace-img-with-alt ()
-  (interactive)
-  (save-excursion (goto-char (point-min))
-		  (while(search-forward "<img " nil t)
-		    (backward-char 5)
-		    (let ((start (point)))
-		      (search-forward "alt=\"")
-		      (kill-region start (point))
-		      (search-forward "\"" nil t)
-		      (setq start (- (point) 1))
-		      (search-forward "/>")
-		      (kill-region start (point))))))
-
-(defun remove-tex-bf ()
-  "Remove {\bf ...} from tex files"
-  (interactive)
-  (while (search-forward "{\\bf " nil t)
-    (let ((pos (point)))
-      (sp-end-of-sexp)
-      (delete-char 1)
-      (goto-char pos)
-      (delete-char -5))))
-
-(defun join-broken-sentences ()
-  (interactive)
-  (save-excursion 
-    (while (re-search-forward "\\([a-z]\\)\n\\\s*\\([a-z]\\)" nil t)
-      (replace-match "\\1 \\2"))))
-
-(defun replace-string-in-buffer (str1 str2)
-  (save-excursion
-    (goto-char (point-min))
-    (while (search-forward str1 nil t)
-      (replace-match str2))))
-
-(defun clean-converted-org-file ()
-  (interactive)
-  (save-excursion (goto-char (point-min))
-		  (join-broken-sentences)
-		  (convert-to-one-sentence-per-line)
-		  (replace-string-in-buffer "\\(" "$")
-		  (replace-string-in-buffer "\\)" "$")
-		  (replace-string-in-buffer "\\," " ")
-		  (replace-string-in-buffer " \n" "\n")
-		  (replace-string-in-buffer "\n\n" "\n")))
-
-(use-package flashcards
-  :straight (flashcards :type git :host github :repo "Isaac-Leonard/flashcards.el"))
-
-;; Shuts up warnings when not connected to internet
-(advice-add 'smudge-controller-player-status :around (lambda (fn) (if (internet-up-p) (funcall fn))) nil)
-
-(use-package forge
-  :after magit)
-
-(use-package code-review
-  :straight (code-review :type git :host github :repo "phelrine/code-review" :branch "fix/closql-update")
-  :custom (code-review-auth-login-marker 'code-review))
-
-(use-package crdt)
+  (let (point)
+    (save-excursion
+      (setq point
+            (catch 'non-ascii
+              (while (not (eobp))
+                (or (eq (char-charset (following-char))
+                        'ascii)
+                    (throw 'non-ascii (point)))
+                (forward-char 1)))))
+    (if point
+        (goto-char point)
+        (message "No non-ascii characters."))))
 
 (defun open-buffer (buffer-name)
   "Returns a function that will open the specified buffer when called"
     (lambda (&rest _)(switch-to-buffer buffer-name)))
-
-(use-package nodejs-repl
-  :custom (nodejs-repl-command "ts-node"))
-
-(defun say-current-line ()
-  "Calls the say command with the text of the current line
-Intended for debugging when emacspeak is not working correctly"
-  (interactive)
-  (start-process "say" "*Say*" "say" (thing-at-point 'line)))
-
-(use-package vue-mode)
-
-(defun speak-smudge-player-status ()
-  "Update and speak the current spotify status"
-  (interactive)
-  (smudge-controller-player-status)
-  (dtk-speak smudge-controller-player-status))
-(keymap-global-set "C-c . c" 'speak-smudge-player-status)
 
 (defun md-to-org-region (start end)
   "Convert region from markdown to org"
@@ -1215,13 +1234,6 @@ Intended for debugging when emacspeak is not working correctly"
       (goto-char (point-min))
       (while (re-search-forward "[^[:ascii:]]" nil t)
         (replace-match "")))))
-
-(setq eglot-server-programs (list))
-
-(add-to-list 'eglot-server-programs
-	     `(c++-mode . ("run-lsp.sh")))
-
-(setq print-circle t)
 
 (defun clean-math1210-lecture ()
   "Removes unneeded stuff from lectures"
@@ -1354,87 +1366,87 @@ Intended for debugging when emacspeak is not working correctly"
     (replace-match "\n" nil t))
   (beginning-of-buffer)
   (while (search-forward "\n\n" nil t)
-    (replace-match "\n" nil t))
-  ))
+    (replace-match "\n" nil t))))
 
-(defun rustic-cargo-insta-nextest-run (&optional test-args)
-  "Start compilation process for 'cargo insta test --test-runner=nextest' with optional TEST-ARGS."
+(defun replace-img-with-alt ()
   (interactive)
-  (rustic-compilation-process-live)
-  (let* ((command (list (rustic-cargo-bin) "insta" "test" "--test-runner=nextest"))
-         (c (append command (split-string (if test-args test-args ""))))
-         (buf rustic-test-buffer-name)
-         (proc rustic-test-process-name)
-         (mode 'rustic-cargo-test-mode))
-    (rustic-compilation c (list :buffer buf :process proc :mode mode))))
+  (save-excursion (goto-char (point-min))
+		  (while(search-forward "<img " nil t)
+		    (backward-char 5)
+		    (let ((start (point)))
+		      (search-forward "alt=\"")
+		      (kill-region start (point))
+		      (search-forward "\"" nil t)
+		      (setq start (- (point) 1))
+		      (search-forward "/>")
+		      (kill-region start (point))))))
 
-(defun rustic-cargo-insta-nextest (&optional arg)
-  "Run 'cargo insta test --test-runner=nextest'.
-
-If ARG is not nil, use value as argument and store it in `rustic-test-arguments'.
-When calling this function from `rustic-popup-mode', always use the value of
-`rustic-test-arguments'."
-  (interactive "P")
-  (rustic-cargo-insta-nextest-run
-   (cond (arg
-          (setq rustic-test-arguments (read-from-minibuffer "Cargo insta test --test-runner=nextest arguments: " rustic-default-test-arguments)))
-         (rustic-cargo-use-last-stored-arguments
-          (if (> (length rustic-test-arguments) 0)
-              rustic-test-arguments
-            rustic-default-test-arguments))
-         (t
-          rustic-default-test-arguments)))
-  (switch-to-buffer rustic-test-buffer-name))
-
-(defun rustic-cargo-nextest-run (&optional test-args)
-  "Start compilation process for 'cargo insta test --test-runner=nextest' with optional TEST-ARGS."
+(defun remove-tex-bf ()
+  "Remove {\bf ...} from tex files"
   (interactive)
-  (rustic-compilation-process-live)
-  (let* ((command (list (rustic-cargo-bin) "nextest" "run"))
-         (c (append command (split-string (if test-args test-args ""))))
-         (buf rustic-test-buffer-name)
-         (proc rustic-test-process-name)
-         (mode 'rustic-cargo-test-mode))
-    (rustic-compilation c (list :buffer buf :process proc :mode mode))))
+  (while (search-forward "{\\bf " nil t)
+    (let ((pos (point)))
+      (sp-end-of-sexp)
+      (delete-char 1)
+      (goto-char pos)
+      (delete-char -5))))
 
-(defun rustic-cargo-nextest (&optional arg)
-  "Run 'cargo insta test --test-runner=nextest'.
+(defun join-broken-sentences ()
+  (interactive)
+  (save-excursion 
+    (while (re-search-forward "\\([a-z]\\)\n\\\s*\\([a-z]\\)" nil t)
+      (replace-match "\\1 \\2"))))
 
-If ARG is not nil, use value as argument and store it in `rustic-test-arguments'.
-When calling this function from `rustic-popup-mode', always use the value of
-`rustic-test-arguments'."
-  (interactive "P")
-  (rustic-cargo-nextest-run
-   (cond (arg
-          (setq rustic-test-arguments (read-from-minibuffer "Cargo nextest arguments: ")))
-         (rustic-cargo-use-last-stored-arguments rustic-test-arguments)
-         (t
-          ())))
-  (switch-to-buffer rustic-test-buffer-name))
+(defun replace-string-in-buffer (str1 str2)
+  (save-excursion
+    (goto-char (point-min))
+    (while (search-forward str1 nil t)
+      (replace-match str2))))
 
-(setq lsp-ruff-python-path "/opt/homebrew/bin/python3.13")
+(defun clean-converted-org-file ()
+  (interactive)
+  (save-excursion (goto-char (point-min))
+		  (join-broken-sentences)
+		  (convert-to-one-sentence-per-line)
+		  (replace-string-in-buffer "\\(" "$")
+		  (replace-string-in-buffer "\\)" "$")
+		  (replace-string-in-buffer "\\," " ")
+		  (replace-string-in-buffer " \n" "\n")
+		  (replace-string-in-buffer "\n\n" "\n")))
 
-(setq save-place-limit 100000)
+;; Helper function
+(defun do-lines (fun &optional start end)
+  "Invoke function FUN on the text of each line from START to END."
+  (interactive
+   (let ((fn   (intern (completing-read "Function: " obarray 'functionp t))))
+     (if (use-region-p)
+         (list fn (region-beginning) (region-end))
+       (list fn (point-min) (point-max)))))
+  (save-excursion
+    (goto-char start)
+    (while (< (point) end)
+      (funcall fun (buffer-substring (line-beginning-position) (line-end-position)))
+      (forward-line 1))))
 
-(use-package gptel
-  :config
-  ;; OPTIONAL configuration
-  (setq
-   gptel-model   'test
-   gptel-backend (gptel-make-openai "llama-cpp"
-				    :stream t
-				    :protocol "http"
-				    :host "localhost:8080"
-				    :models '(test))))
+(defun convert-to-one-sentence-per-line ()
+  "converts the current buffer to have one scentence per line.
+Adds newline after full stops in the buffer at the end of sentences."
+  (interactive)
+  (save-excursion
+    (beginning-of-buffer)
+    (while (search-forward-regexp "\\([a-z][a-z]\\|\\$\\)\\. " nil t)
+      (open-line 1)
+      (indent-relative-maybe)
+      ))
+  )
 
+(defun jump-to-end-of-buffer ()
+  (goto-char (point-max)))
 
-(load-file "~/.emacs.d/custom-elfeed.el")
+(defun get-readable-time ()
+  (interactive)
+  (substring (current-time-string) 11 16))
 
-(defun pm--visible-buffer-name()
-  "Stand in for missing polymode function"
-  ;; Not sure if this will do the job
-  (buffer-name))
-
-(use-package go-mode)
-(setq lsp-go-analyses '((shadow . t)
-                        (simplifycompositelit . :json-false)))
+(defun insert-current-time () "Inserts the current time in 24 hour format in the current buffer"
+      (interactive)
+      (insert (get-readable-time)))
