@@ -117,6 +117,14 @@ Image types are symbols like `xbm' or `jpeg'."
   (company-selection-wrap-around t)
   )
 
+;; Spellchecking
+(use-package flyspell-correct
+  :after flyspell
+  :bind (:map flyspell-mode-map ("C-;" . flyspell-correct-wrapper))
+  :hook (text-mode . flyspell-mode)
+  ;; Useful for correcting spelling in comments in code
+  (prog-mode . flyspell-mode))
+
 ;; Inline documentation where possible
 (use-package eldoc
   :hook (lsp-mode . eldoc-mode)
@@ -238,41 +246,67 @@ path and tries invoking `executable-find' again."
 		      (when (string-equal "tsx" (file-name-extension buffer-file-name))
 			(setup-tide-mode)))))
 
+;;; Text processing and writing
+
 ;; Org- setup
-(use-package org)
-(setq org-startup-folded t)
-
-;; Hide every properties drawer
-(defun org-hide-all-properties ()
-  "Hides all the property drawers in the current file"
-  (interactive)
-  (save-excursion
-    (beginning-of-buffer)
-    (while (search-forward ":PROPERTIES:"  nil t) (org-hide-drawer-toggle))
-    )
-  )
-
-;; Variables
-(setq org-agenda-files "~/org/agenda-files.txt")
-(setq org-agenda-span 7)
-(setq org-agenda-custom-commands '(
+(use-package org
+  :custom (org-startup-folded t)
+  (org-agenda-files "~/org/agenda-files.txt")
+  (org-agenda-span 7)
+  (org-agenda-custom-commands '(
 				   ("m" "Overview" ((agenda "") (alltodo ""))
 				    )))
-;; Include holidays and stuff in org-agender
-(setq org-agenda-include-diary t)
-;; Capture notes
-(setq org-directory "~/org/")
-(setq org-default-notes-file "~/org/notes.org")
+  ;; Include holidays and stuff in org-agenda
+  (org-agenda-include-diary t)
+  ;; Capture notes
+  (org-directory "~/org/")
+  (org-default-notes-file "~/org/notes.org")
+  (org-fold-catch-invisible-edits 'show-and-error)
+  (org-capture-templates
+   '(("t" "Todo" entry (file+headline "" "Tasks")
+      "* TODO %?\n  %i\n  %a")
+     ("n" "Note" entry (file+headline "" "Notes")
+      "* %?\n  %i\n  %a")
+     ("j" "Journal" entry (file+datetree "~/org/diary.org")
+      "* %?\nEntered on %U\n  %i\n  %a" :kill-buffer)
+     ("P" "process-soon" entry (file+headline "~/org/notes.org" "Emails")
+      "** TODO %:fromname: %a \nDEADLINE: %(org-insert-time-stamp (org-read-date nil t \"+5d\"))")))
+    ;; From https://www.reddit.com/r/emacs/comments/fgcw2b/org_change_date_format_only_on_export/
+  ;; custom format to 'euro' timestamp
+  (org-time-stamp-custom-formats '("<%d.%m.%Y>" . "<%d.%m.%Y %a %H:%M>"))
+  (org-plantuml-executable-path (expand-file-name "/usr/local/bin/plantuml"))
+  (org-plantuml-exec-mode 'plantuml)
+  (org-odt-preferred-output-format "docx")
+  :hook (org-export-before-processing . my-org-export-ensure-custom-times)
+  ;; Improve latex editing in org mode
+  (org-mode . turn-on-org-cdlatex)
+  :config (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
+  (require 'ob-sql)
+  (org-babel-do-load-languages 'org-babel-load-languages '((plantuml . t) (sql t)))
+  (defun org-hide-all-properties ()
+	    "Hides all the property drawers in the current file"
+	    (interactive)
+	    (save-excursion
+	      (beginning-of-buffer)
+	      (while (search-forward ":PROPERTIES:"  nil t) (org-hide-drawer-toggle))
+	      )
+	    )
+  ;; function with hook on export
+  (defun my-org-export-ensure-custom-times (backend)
+    (setq-local org-display-custom-times t))
+  ;; remove brackets on export
+  (defun org-export-filter-timestamp-remove-brackets (timestamp backend info)
+    "removes relevant brackets from a timestamp"
+    (cond
+     ((org-export-derived-backend-p backend 'latex)
+      (replace-regexp-in-string "[<>]\\|[][]" "" timestamp))
+     ((org-export-derived-backend-p backend 'html)
+      (replace-regexp-in-string "&[lg]t;\\|[][]" "" timestamp))))
+  (eval-after-load 'ox '(add-to-list
+                       'org-export-filter-timestamp-functions
+                       'org-export-filter-timestamp-remove-brackets)))
 
-(setq org-capture-templates
-      '(("t" "Todo" entry (file+headline "" "Tasks")
-         "* TODO %?\n  %i\n  %a")
-	("n" "Note" entry (file+headline "" "Notes")
-         "* %?\n  %i\n  %a")
-        ("j" "Journal" entry (file+datetree "~/org/diary.org")
-         "* %?\nEntered on %U\n  %i\n  %a" :kill-buffer)
-	("P" "process-soon" entry (file+headline "~/org/notes.org" "Emails")
-	 "** TODO %:fromname: %a \nDEADLINE: %(org-insert-time-stamp (org-read-date nil t \"+5d\"))")))
+;; Second brain setup
 (use-package org-roam
   :custom (org-roam-directory (file-truename "~/org-roam/"))
   (org-roam-v2-ack t)
@@ -317,42 +351,10 @@ path and tries invoking `executable-find' again."
                 ("C-o r a" . org-roam-alias-add)
                 ("C-o r l" . org-roam-buffer-toggle)))))
 
-;; ORG-EXPORT TIMESTAMPS
-;; From https://www.reddit.com/r/emacs/comments/fgcw2b/org_change_date_format_only_on_export/
-;; custom format to 'euro' timestamp
-(setq org-time-stamp-custom-formats '("<%d.%m.%Y>" . "<%d.%m.%Y %a %H:%M>"))
-;; function with hook on export
-(defun my-org-export-ensure-custom-times (backend)
-  (setq-local org-display-custom-times t))
-(add-hook 'org-export-before-processing-hook 'my-org-export-ensure-custom-times)
-;; remove brackets on export
-(defun org-export-filter-timestamp-remove-brackets (timestamp backend info)
-  "removes relevant brackets from a timestamp"
-  (cond
-   ((org-export-derived-backend-p backend 'latex)
-    (replace-regexp-in-string "[<>]\\|[][]" "" timestamp))
-   ((org-export-derived-backend-p backend 'html)
-    (replace-regexp-in-string "&[lg]t;\\|[][]" "" timestamp))))
-(eval-after-load 'ox '(add-to-list
-                       'org-export-filter-timestamp-functions
-                       'org-export-filter-timestamp-remove-brackets))
-
-;; Prevents most accidental deletions
-(setq-default org-catch-invisible-edits 'smart)
-;; Spellchecking
-(use-package flyspell-correct
-  :after flyspell
-  :bind (:map flyspell-mode-map ("C-;" . flyspell-correct-wrapper)))
-
-(add-hook 'text-mode-hook 'flyspell-mode)
-;; Useful for correcting spelling in comments in code
-(add-hook 'prog-mode-hook 'flyspell-mode)
 (use-package org-ref)
 (use-package org-journal
-  :bind
-  ("C-c n j" . org-journal-new-entry)
-  :custom
-  (org-journal-date-prefix "#+title: ")
+  :bind ("C-c j" . org-journal-new-entry)
+  :custom (org-journal-date-prefix "#+title: ")
   (org-journal-file-format "%Y-%m-%d.org")
   (org-journal-dir "~/org/journal/")
   (org-journal-date-format "%A, %d %B %Y"))
@@ -366,6 +368,7 @@ path and tries invoking `executable-find' again."
   (deft-use-filter-string-for-filename t)
   (deft-default-extension "org")
   (deft-directory org-roam-directory))
+
 ;; Tables of contents in org files
 (defun org-make-table-of-contents ()
   "Makes a table of contents at the start of the buffer"
@@ -401,7 +404,6 @@ path and tries invoking `executable-find' again."
     (insert ":end:\n")
     ))
 
-
 (defun org-replace-link-by-link-description ()
     "Replace an org link by its description or if empty its address"
   (interactive)
@@ -422,8 +424,7 @@ path and tries invoking `executable-find' again."
     (beginning-of-buffer)
     (while (search-forward "[[" nil t)
       (org-replace-link-by-link-description))))
-;; Improve latex editing in org mode
-(add-hook 'org-mode-hook 'turn-on-org-cdlatex)
+
 ;; Clean up lectures and notes
 ;; Can be used for other lectures too
 (defun org-clean-lecture ()
@@ -431,88 +432,77 @@ path and tries invoking `executable-find' again."
   (interactive)
   (save-excursion
     (convert-to-one-sentence-per-line)
-  (beginning-of-buffer)
-  (while (search-forward "\n\n" nil t)
-    (replace-match "\n" nil t))
-  (beginning-of-buffer)
-  (while (search-forward "#+begin_center\n" nil t)
-    (replace-match "" nil t))
-  (beginning-of-buffer)
-  (while (search-forward "#+end_center\n" nil t)
-    (replace-match "" nil t))
-  (beginning-of-buffer)
-  (while (search-forward "#+begin_example\n#+end_example\n" nil t)
-    (replace-match "" nil t))
-  (beginning-of-buffer)
-  (while (search-forward "\\(" nil t)
-    (replace-match "$" nil t))
-  (beginning-of-buffer)
-  (while (search-forward "\\)" nil t)
-    (replace-match "$" nil t))
-  (beginning-of-buffer)
-  (while (search-forward "$ $" nil t)
-    (replace-match "$\n$" nil t))
     (beginning-of-buffer)
-  (while (search-forward "),(" nil t)
-    (replace-match "),\n(" nil t))
-  ))
+    (while (search-forward "\n\n" nil t)
+      (replace-match "\n" nil t))
+    (beginning-of-buffer)
+    (while (search-forward "#+begin_center\n" nil t)
+      (replace-match "" nil t))
+    (beginning-of-buffer)
+    (while (search-forward "#+end_center\n" nil t)
+      (replace-match "" nil t))
+    (beginning-of-buffer)
+    (while (search-forward "#+begin_example\n#+end_example\n" nil t)
+      (replace-match "" nil t))
+    (beginning-of-buffer)
+    (while (search-forward "\\(" nil t)
+      (replace-match "$" nil t))
+    (beginning-of-buffer)
+    (while (search-forward "\\)" nil t)
+      (replace-match "$" nil t))
+    (beginning-of-buffer)
+    (while (search-forward "$ $" nil t)
+      (replace-match "$\n$" nil t))
+    (beginning-of-buffer)
+    (while (search-forward "),(" nil t)
+      (replace-match "),\n(" nil t))))
 
-(setq org-plantuml-executable-path (expand-file-name "/usr/local/bin/plantuml"))
-(setq org-plantuml-exec-mode 'plantuml)
-(add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
-(require 'ob-sql)
-(org-babel-do-load-languages 'org-babel-load-languages '(
-  (plantuml . t)
-  (sql t)))
-(setq org-odt-preferred-output-format "docx")
+;;; News
 
-;; RSS feeds
-(defun my/elfeed-jump-to-article-body (buf &optional NORECORD FORCE-SAME-WINDOW)
-  "Switch to elfeed article buffer and move point to the beginning of the article text in `elfeed-show-mode`."
-  (switch-to-buffer buf NORECORD FORCE-SAME-WINDOW)
-  (when (eq major-mode 'elfeed-show-mode)
-    (goto-char (point-min))
-    ;; Skip past title, tags, and metadata
-    (re-search-forward "\n\n" nil t)))
-
+;; RSS
 (use-package elfeed
+  :config (defun my/elfeed-jump-to-article-body (buf &optional NORECORD FORCE-SAME-WINDOW)
+	    "Switch to elfeed article buffer and move point to the beginning of the article text in `elfeed-show-mode`."
+	    (switch-to-buffer buf NORECORD FORCE-SAME-WINDOW)
+	    (when (eq major-mode 'elfeed-show-mode)
+	      (goto-char (point-min))
+	      ;; Skip past title, tags, and metadata
+	      (re-search-forward "\n\n" nil t)))
+  (defun elfeed-search-print-entry--custom (entry)
+    "Print ENTRY to the buffer."
+    (let* ((date (elfeed-search-format-date (elfeed-entry-date entry)))
+           (title (or (elfeed-meta entry :title) (elfeed-entry-title entry) ""))
+           (title-faces (elfeed-search--faces (elfeed-entry-tags entry)))
+           (feed (elfeed-entry-feed entry))
+           (feed-title
+            (when feed
+              (or (elfeed-meta feed :title) (elfeed-feed-title feed))))
+           (tags (mapcar #'symbol-name (elfeed-entry-tags entry)))
+           (tags-str (mapconcat
+                      (lambda (s) (propertize s 'face 'elfeed-search-tag-face))
+                      tags ","))
+           (title-width (- (window-width) 10 elfeed-search-trailing-width))
+           (title-column (elfeed-format-column
+                          title (elfeed-clamp
+				 elfeed-search-title-min-width
+				 title-width
+				 elfeed-search-title-max-width)
+                          :left)))
+      (insert (propertize title-column 'face title-faces 'kbd-help title) " ")
+      (when feed-title
+	(insert (propertize feed-title 'face 'elfeed-search-feed-face) " "))
+      (when tags
+	(insert "(" tags-str ")"))
+      (insert (propertize date 'face 'elfeed-search-date-face) " ")))
   :custom (elfeed-search-title-max-width 280)
   (elfeed-search-title-min-width 280)
-  :config (global-set-key (kbd "C-x w") 'elfeed)
-  :custom (elfeed-show-entry-switch 'my/elfeed-jump-to-article-body))
+  (elfeed-show-entry-switch 'my/elfeed-jump-to-article-body)
+  (elfeed-search-print-entry-function 'elfeed-search-print-entry--custom)
+  :bind ("C-x w" . elfeed))
+
 (use-package elfeed-org
   :config (elfeed-org)
   :custom (rmh-elfeed-org-files (list "~/.emacs.d/elfeed.org")))
-
-
-
-(defun elfeed-search-print-entry--custom (entry)
-  "Print ENTRY to the buffer."
-  (let* ((date (elfeed-search-format-date (elfeed-entry-date entry)))
-         (title (or (elfeed-meta entry :title) (elfeed-entry-title entry) ""))
-         (title-faces (elfeed-search--faces (elfeed-entry-tags entry)))
-         (feed (elfeed-entry-feed entry))
-         (feed-title
-          (when feed
-            (or (elfeed-meta feed :title) (elfeed-feed-title feed))))
-         (tags (mapcar #'symbol-name (elfeed-entry-tags entry)))
-         (tags-str (mapconcat
-                    (lambda (s) (propertize s 'face 'elfeed-search-tag-face))
-                    tags ","))
-         (title-width (- (window-width) 10 elfeed-search-trailing-width))
-         (title-column (elfeed-format-column
-                        title (elfeed-clamp
-                               elfeed-search-title-min-width
-                               title-width
-                               elfeed-search-title-max-width)
-                        :left)))
-    (insert (propertize title-column 'face title-faces 'kbd-help title) " ")
-    (when feed-title
-      (insert (propertize feed-title 'face 'elfeed-search-feed-face) " "))
-    (when tags
-      (insert "(" tags-str ")"))
-    (insert (propertize date 'face 'elfeed-search-date-face) " ")))
-(setq elfeed-search-print-entry-function 'elfeed-search-print-entry--custom)
 
 ;; Sorts suggestions in order of most used
 (use-package company-prescient
