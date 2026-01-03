@@ -148,6 +148,11 @@ Image types are symbols like `xbm' or `jpeg'."
 ;; Limit how many items can be in the kill ring at once.
 (setq kill-ring-max 1000)
 
+;; Prompt before opening large files and provide method to view them without loading all of their contents at once.
+(use-package vlf
+  :config (require 'vlf-setup))
+
+
 ;;; Programming configuration
 
 ;; Elisp configuration comes first so we can correct any issues we introduce later in the file more easily.
@@ -1070,6 +1075,17 @@ beginning or end of a physical line produces an  auditory icon."
 (use-package py-isort
   :hook ((python-mode . (lambda () (add-hook 'before-save-hook  'py-isort-before-save)))))
 
+;; R and R markdown setup
+(use-package ess)
+(use-package polymode)
+(use-package poly-R
+  :config
+  (add-to-list 'auto-mode-alist
+               '("\\.[rR]md\\'" . poly-gfm+r-mode))
+  :custom (markdown-code-block-braces t))
+
+(advice-add 'ess-eval-region-or-function-or-paragraph-and-step :after (lambda (&optional v w)(switch-to-buffer "*R*")))
+
 ;;; Automating work
 
 (defun clock-on ()
@@ -1089,47 +1105,6 @@ beginning or end of a physical line produces an  auditory icon."
   (save-window-excursion (switch-to-buffer "hours.org")
 		       (org-clock-out)
 		       (save-buffer)))
-
-;; Emacspeaks' usage of the read function seems to be broken
-(setq emacspeak-pronounce-pronunciation-keys '(("buffer" . "buffer")
- ("file" . "file")
- ("directory" . "directory")
- ("mode" . "mode")))
-(defun emacspeak-pronounce-get-key ()
-  "Collect key from user.
-Returns a pair of the form (key-type . key)."
-  (cl-declare (special emacspeak-pronounce-pronunciation-keys))
-  (let ((key nil)
-        (key-type
-         (completing-read
-          "Define pronunciation that is specific to: "
-          emacspeak-pronounce-pronunciation-keys nil t)))
-    (when (called-interactively-p 'interactive) ;cleanup minibuffer history
-      (pop minibuffer-history))
-    (cond
-     ((string-equal key-type "buffer")
-      (setq key (buffer-name))) ;handled differently
-     ((string-equal key-type "file")
-      (setq key (buffer-file-name))
-      (or key
-          (error "Current buffer is not associated with a file"))
-      (setq key (intern key)))
-     ((string-equal key-type "directory")
-      (setq key
-            (or
-             (condition-case nil
-                 (file-name-directory (buffer-file-name))
-               (error nil))
-             default-directory))
-      (or key (error "No directory associated with current buffer"))
-      (setq key (intern key)))
-     ((string-equal key-type "mode")
-      (setq key
-            major-mode)
-      (or key (error "No major mode found for current buffer")))
-     (t (error "Cannot define pronunciations with key type %s" key-type)))
-    (cons key-type key)))
-(setq emacspeak-maths-inferior-program "/usr/local/opt/node@16/bin/node")
 
 (defun replace-img-with-alt ()
   (interactive)
@@ -1176,33 +1151,6 @@ Returns a pair of the form (key-type . key)."
 		  (replace-string-in-buffer "\\," " ")
 		  (replace-string-in-buffer " \n" "\n")
 		  (replace-string-in-buffer "\n\n" "\n")))
-
-(use-package vlf
-  :config (require 'vlf-setup))
-
-
-
-
-(define-derived-mode bs-mode prog-mode "borrow script")
-(require 'lsp-mode)
-(lsp-register-client
- (make-lsp-client
-  :new-connection (lsp-stdio-connection '("cargo" "run" "--bin" "lsp"))
-  :server-id 'bscript
-  :major-modes '(bs-mode)
-  ))
-
-(add-to-list 'lsp-language-id-configuration '(bs-mode . "bscript"))
-
-(use-package ess)
-(use-package polymode)
-(use-package poly-R
-  :config
-  (add-to-list 'auto-mode-alist
-               '("\\.[rR]md\\'" . poly-gfm+r-mode))
-  :custom (markdown-code-block-braces t))
-
-(advice-add 'ess-eval-region-or-function-or-paragraph-and-step :after (lambda (&optional v w)(switch-to-buffer "*R*")))
 
 (use-package flashcards
   :straight (flashcards :type git :host github :repo "Isaac-Leonard/flashcards.el"))
