@@ -372,6 +372,7 @@ path and tries invoking `executable-find' again."
                 ("C-o r a" . org-roam-alias-add)
                 ("C-o r l" . org-roam-buffer-toggle)))))
 
+;; Diary and calendar stuff
 (use-package org-ref)
 (use-package org-journal
   :bind ("C-c j" . org-journal-new-entry)
@@ -379,6 +380,41 @@ path and tries invoking `executable-find' again."
   (org-journal-file-format "%Y-%m-%d.org")
   (org-journal-dir "~/org/journal/")
   (org-journal-date-format "%A, %d %B %Y"))
+
+;; Native emacs diary and calendar stuff.
+;; TODO: Not sure if this is needed still.
+(setq diary-file "~/.emacs.d/diary")
+(setq diary-location "~/.emacs.d/diary-files/")
+(setq diary-display-function 'diary-fancy-display)
+(add-hook 'diary-list-entries-hook 'diary-include-other-diary-files)
+(add-hook 'diary-list-entries-hook 'diary-sort-entries t)
+
+; calendars you want to download
+; each item links to a remote iCal calendar
+(setq calendars
+      '(
+	("timetable" . "https://mytimetable.newcastle.edu.au/odd/rest/calendar/ical/90dc6e24-5cef-4fd5-b0d2-be310d5d4fea")
+        ))
+
+(defun cpm--getcal (url file)
+  "Download ics file and add it to file"
+  (let ((tmpfile (url-file-local-copy url)))
+    (icalendar-import-file tmpfile file)
+    (kill-buffer)))
+
+(defun update-calendars ()
+  "Load a set of ics calendars into emacs diary files"
+  (interactive)
+  (mapcar #'(lambda (x)
+              (let ((file (concat diary-location (car x)))
+                    (url (cdr x)))
+                (message "%s" (format "Loading %s into %s" url file))
+                (find-file file)
+                ;; (flush-lines "^[& ]") ;; if you import ical as non marking
+                (erase-buffer) ;; to avoid duplicating events
+                (cpm--getcal url file)
+                ))
+          calendars))
 
 (use-package deft
   :after org
@@ -579,49 +615,6 @@ path and tries invoking `executable-find' again."
   (global-magit-file-mode 1)
   (magit-define-global-key-bindings t)
   :bind ("C-c g" . magit-file-dispatch))
-
-;; Diary and calendar stuff
-(setq diary-file "~/.emacs.d/diary")
-(setq diary-location "~/.emacs.d/diary-files/")
-(setq diary-display-function 'diary-fancy-display)
-(add-hook 'diary-list-entries-hook 'diary-include-other-diary-files)
-(add-hook 'diary-list-entries-hook 'diary-sort-entries t)
-
-; calendars you want to download
-; each item links to a remote iCal calendar
-(setq calendars
-      '(
-	("timetable" . "https://mytimetable.newcastle.edu.au/odd/rest/calendar/ical/90dc6e24-5cef-4fd5-b0d2-be310d5d4fea")
-        ))
-
-(defun cpm--getcal (url file)
-  "Download ics file and add it to file"
-  (let ((tmpfile (url-file-local-copy url)))
-    (icalendar-import-file tmpfile file)
-    (kill-buffer)))
-
-(defun update-calendars ()
-  "Load a set of ics calendars into emacs diary files"
-  (interactive)
-  (mapcar #'(lambda (x)
-              (let ((file (concat diary-location (car x)))
-                    (url (cdr x)))
-                (message "%s" (format "Loading %s into %s" url file))
-                (find-file file)
-                ;; (flush-lines "^[& ]") ;; if you import ical as non marking
-                (erase-buffer) ;; to avoid duplicating events
-                (cpm--getcal url file)
-                ))
-          calendars))
-;; (use-package md4rd
-;;   :config
-;;   (add-hook 'md4rd-mode-hook 'md4rd-indent-all-the-lines)
-;;   (setq md4rd-subs-active '(emacs lisp+Common_Lisp prolog clojure))
-;;   (setq md4rd--oauth-access-token
-;;         "your-access-token-here")
-;;   (setq md4rd--oauth-refresh-token
-;;         "your-refresh-token-here")
-;;   (run-with-timer 0 3540 'md4rd-refresh-login))
 
 ;; Python jupitor mode
 (use-package ein)
