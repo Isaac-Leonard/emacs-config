@@ -117,6 +117,27 @@ Image types are symbols like `xbm' or `jpeg'."
   (company-selection-wrap-around t)
   )
 
+;; Sorts suggestions in order of most used
+(use-package company-prescient
+  :hook
+  (prog-mode . company-prescient-mode)
+  (prog-mode . prescient-persist-mode)
+  )
+
+;; Helpful for general writing
+(use-package company-wordfreq
+  :straight (company-wordfreq :type git :host github :repo "johannes-mueller/company-wordfreq.el")
+  :custom (ispell-local-dictionary "english")
+
+  :hook (text-mode .  (lambda ()
+                        (setq-local company-backends '(company-wordfreq))
+                        (setq-local company-transformers nil))))
+
+;; Dictionary and thesaurus
+(use-package define-word)
+(use-package synonyms)
+(setq synonyms-file "~/mthesaur.txt")
+
 ;; Spellchecking
 (use-package flyspell-correct
   :after flyspell
@@ -503,28 +524,6 @@ path and tries invoking `executable-find' again."
 (use-package elfeed-org
   :config (elfeed-org)
   :custom (rmh-elfeed-org-files (list "~/.emacs.d/elfeed.org")))
-
-;; Sorts suggestions in order of most used
-(use-package company-prescient
-  :hook
-  (prog-mode . company-prescient-mode)
-  (prog-mode . prescient-persist-mode)
-  )
-
-;; Helpful for general writing
-(use-package company-wordfreq
-  :straight (company-wordfreq :type git :host github :repo "johannes-mueller/company-wordfreq.el")
-  :custom (ispell-local-dictionary "english")
-  )
-
-(add-hook 'text-mode-hook (lambda ()
-                            (setq-local company-backends '(company-wordfreq))
-                            (setq-local company-transformers nil)))
-(use-package define-word)
-(use-package synonyms)
-(setq synonyms-file "~/mthesaur.txt")
-
-
 
 ;; My own custom functions
 (defun jump-to-end-of-buffer ()
