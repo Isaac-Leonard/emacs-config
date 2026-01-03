@@ -45,6 +45,25 @@ Image types are symbols like `xbm' or `jpeg'."
   (interactive)
   (find-file "~/.emacs.d/init.el"))
 
+;; Enable proper sound support on macos
+;; Based on https://github.com/leoliu/play-sound-osx
+(unless (and (fboundp 'play-sound-internal)
+	     (subrp (symbol-function 'play-sound-internal)))
+  (defun play-sound-internal (sound)
+  "Internal function for `play-sound' (which see)."
+  (or (eq (car-safe sound) 'sound)
+      (signal 'wrong-type-argument (list sound)))
+
+  (cl-destructuring-bind (&key file data volume device)
+      (cdr sound)
+
+    (and (or data device)
+         (error "DATA and DEVICE arg not supported"))
+
+    (apply #'start-process "afplay" nil
+           "afplay" (append (and volume (list "-v" volume))
+                            (list (expand-file-name file data-directory)))))))
+
 ;;Update buffers when fixxing with linters and version control
 (global-auto-revert-mode)
 
@@ -227,6 +246,7 @@ path and tries invoking `executable-find' again."
 ;; Auto-formatting for scentences
 (use-package twauctex
   :straight (twauctex :type git :host github :repo "jeeger/twauctex"))
+(use-package cdlatex)
 
 ;; Java
 (use-package lsp-java
@@ -591,13 +611,14 @@ path and tries invoking `executable-find' again."
       (interactive)
       (insert (get-readable-time)))
 
-
 ;; Magit
 (use-package magit
   :custom
   (global-magit-file-mode 1)
   (magit-define-global-key-bindings t)
   :bind ("C-c g" . magit-file-dispatch))
+;; Makes magit work
+(setq project-switch-commands t)
 
 ;; Python jupitor mode
 (use-package ein)
@@ -693,6 +714,24 @@ path and tries invoking `executable-find' again."
   :bind (:map smudge-mode-map ("C-c ." . smudge-command-map))
   :init (define-prefix-command 'smudge-command-map))
 
+(defun smudge-connect-set-volume (new-volume)
+  "Set the volume on the actively playing device."
+  (smudge-connect-when-device-active
+   (smudge-api-get-player-status
+    (lambda (status)
+        (smudge-api-set-volume
+         (smudge-connect-get-device-id status)
+         new-volume
+         (lambda (_)
+           (message "Volume set to %d%%" new-volume)))))))
+
+(defun smudge-controller-set-volume (volume)
+  "Increase the volume for the active device."
+  (interactive "nVolume to set to:")
+  (smudge-controller-apply "set-volume" volume))
+
+(define-key smudge-command-map (kbd "M-v") #'smudge-controller-set-volume)
+
 ;; Disable EWW line trunkation
 (defadvice shr-fill-text (around shr-no-fill-text activate)
   "Do not fill text when `shr-no-fill-mode' is enabled."
@@ -741,31 +780,7 @@ path and tries invoking `executable-find' again."
   (add-hook 'rustic-mode-hook #'(lambda () (setq-local tab-width 4)))
   :custom (rustic-default-test-arguments "--all-features"))
 
-(use-package cdlatex)
-
-;; Matrix-client
-;; Install `plz' HTTP library (not on MELPA yet).
-(use-package plz
-  :straight (plz :type git :host github :repo "alphapapa/plz.el"))
-
-;; Install Ement.
-(use-package ement
-  :straight (ement :type git :host github :repo "alphapapa/ement.el"))
-
-;; Makes magit work
-(setq project-switch-commands t)
-
-;; Change the default ms-sql program to a more modern one
-(setq sql-ms-program "sqlcmd")
-(setq sql-connection-alist
-      '((connection-string-a (sql-product 'ms)
-                             (sql-server "127.0.0.1:1443")
-                             (sql-user "SA")
-                             (sql-password "P1:sword'")
-                             (sql-database "master"))))
-
 ;; Email
-;;(use-package mu4e)
 (add-to-list 'load-path (directory-file-name "/opt/homebrew/share/emacs/site-lisp/mu/mu4e"))
 (load-file "~/.config/mu4e/mu4e-config.el")
 ;; Fetch email every 5 minutes
@@ -792,29 +807,10 @@ path and tries invoking `executable-find' again."
 (setq mu4e-display-update-status-in-modeline t)
 (setq mu4e-headers-precise-alignment t)
 (advice-add 'mu4e~headers-truncate-field-precise :override (lambda (field val width) val))
-;; Enable proper sound support on macos
-(use-package play-sound
-  :straight (play-sound :type git :host github :repo "leoliu/play-sound-osx"))
 
 (use-package pdf-tools
   :config (pdf-tools-install))
 
-(defun smudge-connect-set-volume (new-volume)
-  "Set the volume on the actively playing device."
-  (smudge-connect-when-device-active
-   (smudge-api-get-player-status
-    (lambda (status)
-        (smudge-api-set-volume
-         (smudge-connect-get-device-id status)
-         new-volume
-         (lambda (_)
-           (message "Volume set to %d%%" new-volume)))))))
-
-(defun smudge-controller-set-volume (volume)
-  "Increase the volume for the active device."
-  (interactive "nVolume to set to:")
-  (smudge-controller-apply "set-volume" volume))
-(define-key smudge-command-map (kbd "M-v") #'smudge-controller-set-volume)
 (defun plantuml-find-entity ()
   "Try jump to the name of the refered entity for plantuml"
   (interactive)
