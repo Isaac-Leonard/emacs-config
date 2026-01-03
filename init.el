@@ -27,12 +27,12 @@ Intended for debugging when emacspeak is not working correctly"
   (interactive)
   (start-process "say" "*Say*" "say" (thing-at-point 'line)))
 
+;;; Bug fixes and minor QOL adjustm.
+
 ;; Make the startup cleaner
 (tool-bar-mode -1)
 (menu-bar-mode -1)
 (setq inhibit-startup-message t)
-
-;;; Bug fixes and minor QOL adjustm.
 
 ;; TODO: Not sure if this is still needed
 (add-to-list 'image-types 'svg)
@@ -240,7 +240,7 @@ Image types are symbols like `xbm' or `jpeg'."
 ;; Spellchecking
 (use-package flyspell-correct
   :after flyspell
-  :bind (:map flyspell-mode-map ("C-;" . flyspell-correct-wrapper))
+  :bind ("C-;" . flyspell-correct-wrapper)
   :hook (text-mode . flyspell-mode)
   ;; Useful for correcting spelling in comments in code
   (prog-mode . flyspell-mode))
@@ -298,22 +298,7 @@ path and tries invoking `executable-find' again."
   (lsp-rust-analyzer-display-parameter-hints nil)
   (lsp-rust-analyzer-display-reborrow-hints nil))
 
-;; LaTeX setup
-(use-package tex
-  :straight (auctex :type git :host github :repo "emacs-straight/auctex" :files ("*" (:exclude ".git")))
-  :custom (-default TeX-master nil)
-  (TeX-parse-self t)
-  (TeX-auto-save t)
-  (Tex-electric-math (cons "$" "$")))
-;; For cross references and interfile navigation for tex
-(require 'reftex)
-(add-hook 'LaTeX-mode-hook 'turn-on-reftex)   ; with AUCTeX LaTeX mode
-;; Auto-formatting for scentences
-(use-package twauctex
-  :straight (twauctex :type git :host github :repo "jeeger/twauctex"))
-(use-package cdlatex)
-
-;; Java
+;;; Java
 (use-package lsp-java
   :hook (java-mode . (lambda()(setq tab-width 4)))
   :custom (lsp-java-jdt-download-url "https://www.eclipse.org/downloads/download.php?file=/jdtls/milestones/1.37.0/jdt-language-server-1.37.0-202406271335.tar.gz")
@@ -530,7 +515,8 @@ When calling this function from `rustic-popup-mode', always use the value of
 ;; Python jupitor mode
 (use-package ein)
 
-;; R and R markdown setup
+;;; R and R markdown setup
+
 (defun pm--visible-buffer-name()
   "Stand in for missing polymode function"
   ;; Not sure if this will do the job
@@ -567,6 +553,21 @@ When calling this function from `rustic-popup-mode', always use the value of
 	      )))
 
 ;;; Text processing and writing
+
+;; LaTeX setup
+(use-package tex
+  :straight (auctex :type git :host github :repo "emacs-straight/auctex" :files ("*" (:exclude ".git")))
+  :custom (-default TeX-master nil)
+  (TeX-parse-self t)
+  (TeX-auto-save t)
+  (Tex-electric-math (cons "$" "$")))
+;; For cross references and interfile navigation for tex
+(require 'reftex)
+(add-hook 'LaTeX-mode-hook 'turn-on-reftex)   ; with AUCTeX LaTeX mode
+;; Auto-formatting for scentences
+(use-package twauctex
+  :straight (twauctex :type git :host github :repo "jeeger/twauctex"))
+(use-package cdlatex)
 
 ;; Org- setup
 (use-package org
@@ -727,94 +728,6 @@ When calling this function from `rustic-popup-mode', always use the value of
   (deft-use-filter-string-for-filename t)
   (deft-default-extension "org")
   (deft-directory org-roam-directory))
-
-;; Tables of contents in org files
-(defun org-make-table-of-contents ()
-  "Makes a table of contents at the start of the buffer"
-  (interactive)
-  (let (base-indent))
-  (setq  base-indent (current-indentation))
-  (save-excursion
-    (if (search-forward ":contents:" nil t)
-	(progn
-	  (search-forward ":end:" nil t)
-	  (end-of-line)
-	  (setq end-contents-position (point))
-	  (search-backward ":contents:" nil t)
-	  (beginning-of-line)
-	  (kill-forward-chars (- end-contents-position (point)))
-	  )
-      (beginning-of-buffer))
-    (setq links (org-map-entries (lambda ()
-		       (list (org-store-link nil) (nth 0 (org-heading-components)))
-		       ) nil nil))
-    (insert ":contents:")
-    (insert "\n")
-    (message "before loop")
-    (cl-loop for link in links do
-	     (progn
-	       (dotimes (_ (+ base-indent (* 2 (nth 1 link)))) (insert " "))
-	       (message "indent added")
-	       (insert "- ")
-	       (insert (nth 0 link))
-	       (insert "\n")
-	       )
-	     )
-    (insert ":end:\n")
-    ))
-
-(defun org-replace-link-by-link-description ()
-    "Replace an org link by its description or if empty its address"
-  (interactive)
-  (if (org-in-regexp org-link-bracket-re 1)
-      (save-excursion
-        (let ((remove (list (match-beginning 0) (match-end 0)))
-              (description
-               (if (match-end 2) 
-                   (org-match-string-no-properties 2)
-                 (org-match-string-no-properties 1))))
-          (apply 'delete-region remove)
-          (insert description)))))
-
-(defun org-replace-all-links-by-their-description ()
-  "Replaces every org link in the buffer by its description"
-  (interactive)
-  (save-excursion
-    (beginning-of-buffer)
-    (while (search-forward "[[" nil t)
-      (org-replace-link-by-link-description))))
-
-;; Clean up lectures and notes
-;; Can be used for other lectures too
-(defun org-clean-lecture ()
-  "Removes unneeded stuff from lectures"
-  (interactive)
-  (save-excursion
-    (convert-to-one-sentence-per-line)
-    (beginning-of-buffer)
-    (while (search-forward "\n\n" nil t)
-      (replace-match "\n" nil t))
-    (beginning-of-buffer)
-    (while (search-forward "#+begin_center\n" nil t)
-      (replace-match "" nil t))
-    (beginning-of-buffer)
-    (while (search-forward "#+end_center\n" nil t)
-      (replace-match "" nil t))
-    (beginning-of-buffer)
-    (while (search-forward "#+begin_example\n#+end_example\n" nil t)
-      (replace-match "" nil t))
-    (beginning-of-buffer)
-    (while (search-forward "\\(" nil t)
-      (replace-match "$" nil t))
-    (beginning-of-buffer)
-    (while (search-forward "\\)" nil t)
-      (replace-match "$" nil t))
-    (beginning-of-buffer)
-    (while (search-forward "$ $" nil t)
-      (replace-match "$\n$" nil t))
-    (beginning-of-buffer)
-    (while (search-forward "),(" nil t)
-      (replace-match "),\n(" nil t))))
 
 ;;; News
 
@@ -1041,7 +954,6 @@ with modifications made for ido"
 (add-hook 'dired-mode-hook 'turn-on-gnus-dired-mode)
        (define-key mu4e-headers-mode-map (kbd "C-c c") 'mu4e-org-store-and-capture)
        (define-key mu4e-view-mode-map    (kbd "C-c c") 'mu4e-org-store-and-capture)
-
 (setq mu4e-hide-index-messages t)
 (setq mu4e-change-filenames-when-moving t)
 (setq mu4e-display-update-status-in-modeline t)
@@ -1450,3 +1362,89 @@ Adds newline after full stops in the buffer at the end of sentences."
 (defun insert-current-time () "Inserts the current time in 24 hour format in the current buffer"
       (interactive)
       (insert (get-readable-time)))
+
+;; Tables of contents in org files
+(defun org-make-table-of-contents ()
+  "Makes a table of contents at the start of the buffer"
+  (interactive)
+  (let (base-indent))
+  (setq  base-indent (current-indentation))
+  (save-excursion
+    (if (search-forward ":contents:" nil t)
+	(progn
+	  (search-forward ":end:" nil t)
+	  (end-of-line)
+	  (setq end-contents-position (point))
+	  (search-backward ":contents:" nil t)
+	  (beginning-of-line)
+	  (kill-forward-chars (- end-contents-position (point)))
+	  )
+      (beginning-of-buffer))
+    (setq links (org-map-entries (lambda ()
+		       (list (org-store-link nil) (nth 0 (org-heading-components)))
+		       ) nil nil))
+    (insert ":contents:")
+    (insert "\n")
+    (message "before loop")
+    (cl-loop for link in links do
+	     (progn
+	       (dotimes (_ (+ base-indent (* 2 (nth 1 link)))) (insert " "))
+	       (message "indent added")
+	       (insert "- ")
+	       (insert (nth 0 link))
+	       (insert "\n")
+	       )
+	     )
+    (insert ":end:\n")
+    ))
+
+(defun org-replace-link-by-link-description ()
+    "Replace an org link by its description or if empty its address"
+  (interactive)
+  (if (org-in-regexp org-link-bracket-re 1)
+      (save-excursion
+        (let ((remove (list (match-beginning 0) (match-end 0)))
+              (description
+               (if (match-end 2) 
+                   (org-match-string-no-properties 2)
+                 (org-match-string-no-properties 1))))
+          (apply 'delete-region remove)
+          (insert description)))))
+
+(defun org-replace-all-links-by-their-description ()
+  "Replaces every org link in the buffer by its description"
+  (interactive)
+  (save-excursion
+    (beginning-of-buffer)
+    (while (search-forward "[[" nil t)
+      (org-replace-link-by-link-description))))
+
+(defun org-clean-lecture ()
+  "Removes unneeded stuff from certain uni lectures."
+  (interactive)
+  (save-excursion
+    (convert-to-one-sentence-per-line)
+    (beginning-of-buffer)
+    (while (search-forward "\n\n" nil t)
+      (replace-match "\n" nil t))
+    (beginning-of-buffer)
+    (while (search-forward "#+begin_center\n" nil t)
+      (replace-match "" nil t))
+    (beginning-of-buffer)
+    (while (search-forward "#+end_center\n" nil t)
+      (replace-match "" nil t))
+    (beginning-of-buffer)
+    (while (search-forward "#+begin_example\n#+end_example\n" nil t)
+      (replace-match "" nil t))
+    (beginning-of-buffer)
+    (while (search-forward "\\(" nil t)
+      (replace-match "$" nil t))
+    (beginning-of-buffer)
+    (while (search-forward "\\)" nil t)
+      (replace-match "$" nil t))
+    (beginning-of-buffer)
+    (while (search-forward "$ $" nil t)
+      (replace-match "$\n$" nil t))
+    (beginning-of-buffer)
+    (while (search-forward "),(" nil t)
+      (replace-match "),\n(" nil t))))
