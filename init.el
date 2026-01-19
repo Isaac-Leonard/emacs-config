@@ -239,7 +239,6 @@ Image types are symbols like `xbm' or `jpeg'."
 
 ;; Spellchecking
 (use-package flyspell-correct
-  :after flyspell
   :bind ("C-;" . flyspell-correct-wrapper)
   :hook (text-mode . flyspell-mode)
   ;; Useful for correcting spelling in comments in code
