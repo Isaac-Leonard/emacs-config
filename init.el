@@ -148,10 +148,10 @@ Image types are symbols like `xbm' or `jpeg'."
 (setq backup-directory-alist `(("." . ,(no-littering-expand-var-file-name "backups"))))
 
 ;; Hide those nasty autosave files
-(setq auto-save-file-name-transforms `(("." ,(no-littering-expand-var-file-name "auto-save/") t)))
+(setq auto-save-file-name-transforms `(("*" ,(no-littering-expand-var-file-name "auto-save/") t)))
 
 ;; Hide lock files away so they don't clutter directories.
-(setq lock-file-name-transforms `(("." ,(no-littering-expand-var-file-name "lock/") t)))
+(setq lock-file-name-transforms `(("*" ,(no-littering-expand-var-file-name "lock/") t)))
 
 ;; Lets us access the contents of the kill ring directly.
 (use-package browse-kill-ring)
