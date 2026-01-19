@@ -1078,6 +1078,8 @@ beginning or end of a physical line produces an  auditory icon."
   ;; Exclude the org-agenda files
   ;; (they flood the recentf because dashboard always checks their content)
   (add-to-list 'recentf-exclude (org-agenda-files))
+  (add-to-list 'recentf-exclude (expand-file-name "    ~/.emacspeak/eww-marks"))
+  (add-to-list 'recentf-exclude (expand-file-name "    ~/.emacs.d/var/elfeed/db/index"))
 
   :custom (dashboard-projects-backend 'projectile)
   (dashboard-filter-agenda-entry 'dashboard-no-filter-agenda))
