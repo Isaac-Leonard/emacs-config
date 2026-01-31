@@ -95,11 +95,19 @@ Image types are symbols like `xbm' or `jpeg'."
 ;; If you edit it by hand, you could mess it up, so be careful.
 ;; Your init file should contain only one such instance.
 ;; If there is more than one, they won't work right.
-(custom-set-variables '(message-fill-column 0)
-		      '(safe-local-variable-values
-			'((lsp-rust-features . ["heap"])
-			  (lsp-rust-features . ["all"])
-			  (lsp-rust-features . listp))))
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(ede-project-directories
+   '("/Users/isaac/Programming/c/ede-test/include"
+     "/Users/isaac/Programming/c/ede-test/src"
+     "/Users/isaac/Programming/c/ede-test"))
+ '(message-fill-column 0)
+ '(safe-local-variable-values
+   '((lsp-rust-features . ["heap"]) (lsp-rust-features . ["all"])
+     (lsp-rust-features . listp))))
 
 ;; Print elisp structures nicely.
 (setq print-circle t)
@@ -188,6 +196,14 @@ Image types are symbols like `xbm' or `jpeg'."
 (use-package code-review
   :straight (code-review :type git :host github :repo "phelrine/code-review" :branch "fix/closql-update")
   :custom (code-review-auth-login-marker 'code-review))
+
+;;; Remote development
+(use-package tramp
+  :init (unbind-key "C-t")
+  :bind ("C-t c" . tramp-cleanup)
+  :config (defun tramp-cleanup ()
+	    (tramp-cleanup-all-connections)
+	    (kill-buffer)))
 
 ;;; Programming configuration
 
@@ -822,11 +838,14 @@ When calling this function from `rustic-popup-mode', always use the value of
 
 ;; Spotify
 (use-package smudge
-  :straight (smudge :type git :host github :repo "Isaac-Leonard/smudge")
+  :straight (smudge :type git :host github :repo "Isaac-leonard/smudge")
+  :init (unbind-key "C-c .")
   :config (load-file "~/.emacs.d/smudge-config.el.gpg")
   (global-smudge-remote-mode)
-  :bind (:map smudge-mode-map ("C-c ." . smudge-command-map))
-  :init (define-prefix-command 'smudge-command-map))
+  :bind-keymap ("C-c ." . smudge-command-map)
+  :bind   (:map smudge-command-map
+		("M-v" . smudge-controller-set-volume)
+		("c" . speak-smudge-player-status)))
 
 (defun smudge-connect-set-volume (new-volume)
   "Set the volume on the actively playing device."
@@ -844,7 +863,6 @@ When calling this function from `rustic-popup-mode', always use the value of
   (interactive "nVolume to set to:")
   (smudge-controller-apply "set-volume" volume))
 
-(define-key smudge-command-map (kbd "M-v") #'smudge-controller-set-volume)
 
 ;; Starts the spotifyd demon and attempts to restart it on crashes
 (defun run-spotifyd ()
@@ -929,7 +947,6 @@ with modifications made for ido"
   (interactive)
   (smudge-controller-player-status)
   (dtk-speak smudge-controller-player-status))
-(keymap-global-set "C-c . c" 'speak-smudge-player-status)
 
 ;;; Email
 (add-to-list 'load-path (directory-file-name "/opt/homebrew/share/emacs/site-lisp/mu/mu4e"))
@@ -1449,3 +1466,9 @@ Adds newline after full stops in the buffer at the end of sentences."
     (beginning-of-buffer)
     (while (search-forward "),(" nil t)
       (replace-match "),\n(" nil t))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
