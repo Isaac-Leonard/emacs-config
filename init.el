@@ -292,11 +292,84 @@ path and tries invoking `executable-find' again."
       (executable-find (expand-file-name executable))))))
   :custom (flycheck-executable-find 'custom-flycheck-executable-find))
 
+;; Treesitter
+(use-package treesit
+  :straight nil
+      :mode (("\\.tsx\\'" . tsx-ts-mode)
+             ("\\.js\\'"  . typescript-ts-mode)
+             ("\\.mjs\\'" . typescript-ts-mode)
+             ("\\.mts\\'" . typescript-ts-mode)
+             ("\\.cjs\\'" . typescript-ts-mode)
+             ("\\.ts\\'"  . typescript-ts-mode)
+             ("\\.jsx\\'" . tsx-ts-mode)
+             ("\\.json\\'" .  json-ts-mode)
+             ("\\.Dockerfile\\'" . dockerfile-ts-mode)
+             ("\\.prisma\\'" . prisma-ts-mode)
+             ;; More modes defined here...
+             )
+      :preface
+      (defun os/setup-install-grammars ()
+        "Install Tree-sitter grammars if they are absent."
+        (interactive)
+        (dolist (grammar
+                 '((css . ("https://github.com/tree-sitter/tree-sitter-css" "v0.20.0"))
+                   (bash "https://github.com/tree-sitter/tree-sitter-bash")
+                   (html . ("https://github.com/tree-sitter/tree-sitter-html" "v0.20.1"))
+                   (javascript . ("https://github.com/tree-sitter/tree-sitter-javascript" "v0.21.2" "src"))
+                   (json . ("https://github.com/tree-sitter/tree-sitter-json" "v0.20.2"))
+                   (python . ("https://github.com/tree-sitter/tree-sitter-python" "v0.20.4"))
+                   (go "https://github.com/tree-sitter/tree-sitter-go" "v0.20.0")
+                   (markdown "https://github.com/ikatyang/tree-sitter-markdown")
+                   (make "https://github.com/alemuller/tree-sitter-make")
+                   (elisp "https://github.com/Wilfred/tree-sitter-elisp")
+                   (cmake "https://github.com/uyha/tree-sitter-cmake")
+                   (c "https://github.com/tree-sitter/tree-sitter-c")
+                   (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
+                   (toml "https://github.com/tree-sitter/tree-sitter-toml")
+                   (tsx . ("https://github.com/tree-sitter/tree-sitter-typescript" "v0.20.3" "tsx/src"))
+                   (typescript . ("https://github.com/tree-sitter/tree-sitter-typescript" "v0.20.3" "typescript/src"))
+                   (yaml . ("https://github.com/ikatyang/tree-sitter-yaml" "v0.5.0"))
+                   (prisma "https://github.com/victorhqc/tree-sitter-prisma")))
+          (add-to-list 'treesit-language-source-alist grammar)
+          ;; Only install `grammar' if we don't already have it
+          ;; installed. However, if you want to *update* a grammar then
+          ;; this obviously prevents that from happening.
+          (unless (treesit-language-available-p (car grammar))
+            (treesit-install-language-grammar (car grammar)))))
+
+      ;; Optional, but recommended. Tree-sitter enabled major modes are
+      ;; distinct from their ordinary counterparts.
+      ;;
+      ;; You can remap major modes with `major-mode-remap-alist'. Note
+      ;; that this does *not* extend to hooks! Make sure you migrate them
+      ;; also
+      (dolist (mapping
+               '((python-mode . python-ts-mode)
+                 (css-mode . css-ts-mode)
+                 (typescript-mode . typescript-ts-mode)
+                 (js-mode . typescript-ts-mode)
+                 (js2-mode . typescript-ts-mode)
+                 (c-mode . c-ts-mode)
+                 (c++-mode . c++-ts-mode)
+                 (c-or-c++-mode . c-or-c++-ts-mode)
+                 (bash-mode . bash-ts-mode)
+                 (css-mode . css-ts-mode)
+                 (json-mode . json-ts-mode)
+                 (js-json-mode . json-ts-mode)
+                 (sh-mode . bash-ts-mode)
+                 (sh-base-mode . bash-ts-mode)))
+        (add-to-list 'major-mode-remap-alist mapping))
+      :config
+      (os/setup-install-grammars))
+
 ;; Set up language server protocol
 (use-package lsp-mode
   :commands lsp
-  :hook (python-mode . lsp)
-  (java-mode . lsp)
+  :hook ((python-ts-mode
+	  java-ts-mode
+	  typescript-ts-mode
+	  tsx-ts-mode
+	  js-ts-mode) . lsp-deferred)
   :custom
   (lsp-server-install-dir "~/language-servers")
   (lsp-keymap-prefix "s-l")
@@ -315,7 +388,7 @@ path and tries invoking `executable-find' again."
 
 ;;; Java
 (use-package lsp-java
-  :hook (java-mode . (lambda()(setq tab-width 4)))
+  :hook (java-ts-mode . (lambda()(setq tab-width 4)))
   :custom (lsp-java-jdt-download-url "https://www.eclipse.org/downloads/download.php?file=/jdtls/milestones/1.37.0/jdt-language-server-1.37.0-202406271335.tar.gz")
   (lsp-java-import-gradle-enabled t)
   (lsp-java-configuration-runtimes '[(:name "JavaSE-21"
@@ -324,7 +397,6 @@ path and tries invoking `executable-find' again."
   (lsp-java-import-gradle-wrapper-enabled t))
 
 ;;; Web programming configuration.
-
 ;;This works somehow
 ;; Sets up emacs for typescript using tide-mode
 (defun setup-tide-mode ()
@@ -337,58 +409,12 @@ path and tries invoking `executable-find' again."
   ;; Make navigating errors easier, wrapped in lambda so the error gets read out then read the line out afterwards for context
   ;; Cancel reading the current line if I perform an action
   (eldoc-mode +1)
-  (tide-hl-identifier-mode +1)
   ( tsserver-node-modules))
-
-;; Function to use your node_modules's TSServer to avoid possible collisions with project's Typescript version and Global Typescript version
-(defun tsserver-node-modules ()
-  (let* ((root (locate-dominating-file
-                (or (buffer-file-name) default-directory)
-                "node_modules"))
-         (tsserver
-          (and root
-               (expand-file-name "node_modules/.bin/tsserver"
-                                 root))))
-    (when (and tsserver (file-executable-p tsserver))
-      (setq-default tide-tsserver-executable tsserver))))
-
-(use-package tide
-  :after
-  (typescript-ts-mode company flycheck)
-  (flycheck-add-mode 'typescript-tslint 'web-mode)
-  (flycheck-add-mode 'javascript-eslint 'tide-mode)
-  :config (advice-add 'tide-references :after (lambda ()(switch-to-buffer "*tide-references*")))
-  :hook (typescript-ts-mode . setup-tide-mode))
 
 ;; Format js and ts code
 (use-package prettier-js
   :hook 
-  (tide-mode . prettier-js-mode)
-  (web-mode . prettier-js-mode))
-
-(use-package web-mode
-  :mode ("\\.ts\\'" . typescript-ts-mode)
-  ("\\.tsx\\'" . web-mode)
-  :hook (web-mode . (lambda ()
-		      (when (string-equal "tsx" (file-name-extension buffer-file-name))
-			(setup-tide-mode)))))
-
-;; runs eslint --fix on the current file after save
-;; alpha quality -- use at your own risk
-;; From https://gist.github.com/ustun/73321bfcb01a8657e5b8
-(defun eslint-fix-file ()
-  (interactive)
-  (message "eslint --fixing the file" (buffer-file-name))
-  (shell-command (concat "eslint --fix " (buffer-file-name))))
-
-(defun eslint-fix-file-and-revert ()
-  (interactive)
-  (eslint-fix-file)
-  (revert-buffer t t))
-
-(add-hook 'js2-mode-hook
-          (lambda ()
-            (add-hook 'after-save-hook #'eslint-fix-file-and-revert)))
+  ((typescript-ts-mode js-ts-mode tsx-ts-mode) . prettier-js-mode))
 
 (defun kill-type-definition-buffers ()
   "Kills any *.d.ts buffers"
@@ -1466,9 +1492,18 @@ Adds newline after full stops in the buffer at the end of sentences."
     (beginning-of-buffer)
     (while (search-forward "),(" nil t)
       (replace-match "),\n(" nil t))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
+
+(defun convert-periodic-table-to-qanda ()
+  (interactive)
+  (let* ((table (buffer-substring-no-properties (point-min) (point-max)))
+	 (lines (string-split table "\n" t))
+	 (arrays (mapcar (lambda (str)(split-string str "	" t)) lines)))
+    (switch-to-buffer "element-questions.txt")
+    (mapcar (lambda (element)
+	      (insert (format "Question: What is the chemical symbol for %s?\nAnswer: %s\n" (nth 3 element) (nth 1 element)))
+	      (insert (format "Question: What is the element with the chemical symbol of %s?\nAnswer: %s\n" (nth 1 element) (nth 3 element)))
+	      (insert (format "Question: What is the atomic number of %s?\nAnswer: %s\n" (nth 3 element) (nth 0 element)))
+	      (insert (format "Question: What element has the atomic number %s?\nAnswer: %s\n" (nth 0 element) (nth 3 element)))
+	      (insert (format "Question: What is the atomic mass of %s?\nAnswer: %s\n" (nth 3 element) (nth 2 element)))
+	      ) arrays)))
+
